@@ -3,753 +3,845 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>无知之幕 · 中国历史人口概率</title>
+<title>无知之幕 · 中国历史的146亿人</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0d1117;
-  --bg2: #161b22;
-  --bg3: #21262d;
-  --text: #e6edf3;
-  --text2: #8b949e;
-  --accent: #f0883e;
-  --accent2: #58a6ff;
-  --border: #30363d;
-  --prob-high: #f0883e;
-  --prob-mid: #d29922;
-  --prob-low: #58a6ff;
-  --prob-bg: #1c2128;
+  --bg: #0a0e14;
+  --bg2: #111620;
+  --bg3: #1a1f2e;
+  --text: #e2e8f0;
+  --text2: #8892a4;
+  --text3: #5a6270;
+  --accent: #e87a3e;
+  --accent2: #f0c040;
+  --accent3: #58a6ff;
+  --border: #1e2433;
+  --red: #e34a4a;
 }
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { height: 100%; font-family: 'Noto Sans SC', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
+html { scroll-behavior: smooth; }
+body { font-family: -apple-system, 'Noto Sans SC', 'PingFang SC', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
 
-/* Layout */
-.app-container {
-  display: flex; flex-direction: column; height: 100vh;
+/* ====== SECTION BASE ====== */
+.section { min-height: 100vh; position: relative; overflow: hidden; }
+.section-inner { max-width: 1200px; margin: 0 auto; padding: 60px 40px; position: relative; z-index: 2; }
+@media (max-width: 768px) { .section-inner { padding: 40px 20px; } }
+
+/* ====== HERO ====== */
+#hero {
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #0a0e14 0%, #141a26 50%, #0f141c 100%);
+  text-align: center;
+}
+#hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 30% 20%, rgba(232,122,62,0.08) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 80%, rgba(88,166,255,0.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+.hero-content { max-width: 800px; padding: 40px 20px; }
+.hero-tag {
+  display: inline-block; font-size: 12px; letter-spacing: 4px;
+  color: var(--accent); border: 1px solid rgba(232,122,62,0.3);
+  padding: 6px 18px; border-radius: 20px; margin-bottom: 24px;
+  text-transform: uppercase;
+}
+.hero-content h1 {
+  font-size: clamp(36px, 7vw, 72px); font-weight: 900;
+  letter-spacing: -2px; line-height: 1.15; margin-bottom: 16px;
+}
+.hero-content h1 span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.hero-content .subtitle {
+  font-size: clamp(16px, 2.5vw, 24px); color: var(--text2);
+  font-weight: 300; margin-bottom: 32px; line-height: 1.6;
+}
+.hero-stats {
+  display: flex; justify-content: center; gap: 48px; margin: 40px 0 48px;
+}
+.hero-stat { text-align: center; }
+.hero-stat .num { font-size: 36px; font-weight: 900; color: var(--accent); letter-spacing: -1px; }
+.hero-stat .num.smaller { font-size: 28px; }
+.hero-stat .label { font-size: 13px; color: var(--text3); margin-top: 4px; }
+.hero-cta {
+  display: inline-block; padding: 14px 40px; border-radius: 40px;
+  background: linear-gradient(135deg, var(--accent), #d46a30);
+  color: #fff; font-size: 16px; font-weight: 600; text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 20px rgba(232,122,62,0.3);
+}
+.hero-cta:hover { transform: translateY(-2px); box-shadow: 0 6px 30px rgba(232,122,62,0.4); }
+.scroll-hint {
+  position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+  color: var(--text3); font-size: 12px; letter-spacing: 2px;
+  animation: bounce 2s infinite;
+}
+@keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(8px)} }
+
+/* ====== SECTION TITLES ====== */
+.section-title {
+  font-size: clamp(28px, 4vw, 48px); font-weight: 800;
+  margin-bottom: 8px; letter-spacing: -1px;
+}
+.section-subtitle { font-size: 16px; color: var(--text2); font-weight: 300; margin-bottom: 40px; }
+.section-divider {
+  width: 60px; height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2));
+  margin: 12px 0 24px; border-radius: 2px;
 }
 
-/* Header */
-.header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 24px; background: var(--bg2); border-bottom: 1px solid var(--border);
-  flex-shrink: 0; z-index: 1000;
+/* ====== GRID SECTION ====== */
+#grid-section { background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%); }
+.grid-layout { display: flex; gap: 48px; align-items: flex-start; }
+.grid-visual { flex-shrink: 0; }
+.grid-container {
+  display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px;
+  width: 360px; aspect-ratio: 1;
 }
-.header h1 { font-size: 20px; font-weight: 700; letter-spacing: 1px; }
-.header h1 span { color: var(--accent); }
-.header .subtitle { font-size: 12px; color: var(--text2); }
-.header .stats { font-size: 13px; color: var(--text2); text-align: right; }
+.grid-dot {
+  width: 100%; aspect-ratio: 1; border-radius: 3px;
+  transition: transform 0.2s; cursor: default;
+}
+.grid-dot:hover { transform: scale(1.3); z-index: 10; }
+.grid-info { flex: 1; }
+.grid-info .big-num { font-size: 64px; font-weight: 900; color: var(--accent); line-height: 1; letter-spacing: -3px; }
+.grid-info .big-label { font-size: 20px; color: var(--text); margin: 8px 0 16px; font-weight: 500; }
+.grid-legend-item { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 14px; }
+.grid-legend-item .dot { width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0; }
+.grid-legend-item .count { color: var(--text2); font-size: 13px; }
+.grid-highlight {
+  margin-top: 20px; padding: 16px 20px; background: var(--bg3);
+  border-radius: 8px; border-left: 3px solid var(--accent);
+  font-size: 14px; color: var(--text2); line-height: 1.6;
+}
+.grid-highlight strong { color: var(--accent); }
 
-/* Main content */
-.main-content {
-  display: flex; flex: 1; min-height: 0;
-}
-
-/* Map panel */
-.map-panel {
-  flex: 1; position: relative; min-width: 0;
-}
+/* ====== MAP SECTION ====== */
+#map-section { background: var(--bg); display: flex; flex-direction: column; }
+.map-layout { display: flex; gap: 0; height: calc(100vh - 120px); min-height: 500px; }
+.map-area { flex: 1; position: relative; min-width: 0; }
 #map { width: 100%; height: 100%; }
-.map-legend {
-  position: absolute; bottom: 70px; left: 12px; z-index: 1000;
-  background: rgba(13,17,23,0.92); padding: 10px 14px; border-radius: 8px;
-  border: 1px solid var(--border); font-size: 12px; min-width: 160px;
+.map-side {
+  width: 420px; flex-shrink: 0; display: flex; flex-direction: column;
+  background: var(--bg2); border-left: 1px solid var(--border);
 }
-.map-legend .title { font-weight: 500; margin-bottom: 6px; font-size: 11px; color: var(--text2); letter-spacing: 0.5px; }
-.map-legend .row { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
-.map-legend .swatch { width: 16px; height: 16px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.1); }
+.map-period-info { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); }
+.map-period-info .name { font-size: 20px; font-weight: 700; color: var(--accent); }
+.map-period-info .years { font-size: 13px; color: var(--text2); }
+.map-period-info .stats { display: flex; gap: 16px; font-size: 13px; color: var(--text2); margin-top: 4px; }
+.map-period-info .stats strong { color: var(--text); }
 
-/* Side panel */
-.side-panel {
-  width: 400px; background: var(--bg2); border-left: 1px solid var(--border);
-  display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
-}
-
-/* Period info */
-.period-info {
-  padding: 16px 20px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
-}
-.period-info .period-name {
-  font-size: 22px; font-weight: 700; color: var(--accent);
-}
-.period-info .period-years { font-size: 13px; color: var(--text2); margin: 2px 0 4px; }
-.period-info .period-pop {
-  font-size: 13px; color: var(--text2); display: flex; gap: 16px;
-}
-.period-info .period-pop span strong { color: var(--text); }
-
-/* Top 10 */
-.top10-section {
-  flex: 1; overflow-y: auto; padding: 8px 0;
-}
-.top10-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 20px; font-size: 13px; color: var(--text2); letter-spacing: 0.5px;
-  border-bottom: 1px solid var(--border); margin-bottom: 4px;
+.map-top10 { flex: 1; overflow-y: auto; }
+.map-top10-header {
+  display: flex; justify-content: space-between; padding: 8px 20px;
+  font-size: 12px; color: var(--text3); border-bottom: 1px solid var(--border);
+  letter-spacing: 0.5px;
 }
 .top10-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 8px 20px; cursor: pointer; transition: background 0.15s;
-  border-bottom: 1px solid rgba(48,54,61,0.3);
+  display: flex; align-items: center; gap: 10px; padding: 7px 20px;
+  cursor: pointer; border-bottom: 1px solid rgba(30,36,51,0.5);
+  transition: background 0.15s;
 }
-.top10-item:hover { background: rgba(255,255,255,0.03); }
-.top10-item.active { background: rgba(240,136,62,0.08); border-left: 3px solid var(--accent); padding-left: 17px; }
-.top10-rank {
-  width: 24px; font-size: 14px; font-weight: 700; color: var(--text2); flex-shrink: 0;
-  font-family: 'JetBrains Mono', monospace; text-align: center;
+.top10-item:hover { background: rgba(255,255,255,0.02); }
+.top10-item .rank {
+  width: 22px; font-family: 'SF Mono', monospace; font-size: 13px;
+  font-weight: 600; color: var(--text3); text-align: center;
 }
-.top10-rank.gold { color: #f0c040; }
-.top10-rank.silver { color: #a8b4c0; }
-.top10-rank.bronze { color: #cd7f32; }
-.top10-info { flex: 1; min-width: 0; }
-.top10-info .top10-period { font-size: 13px; font-weight: 500; }
-.top10-info .top10-detail { font-size: 12px; color: var(--text2); display: flex; gap: 8px; }
-.top10-info .top10-detail span { background: var(--bg); padding: 0 6px; border-radius: 3px; }
-.top10-prob {
-  font-size: 15px; font-weight: 700; color: var(--accent); flex-shrink: 0;
-  font-family: 'JetBrains Mono', monospace;
-}
+.top10-item .rank.gold { color: var(--accent2); }
+.top10-item .rank.silver { color: #a8b4c0; }
+.top10-item .rank.bronze { color: #cd7f32; }
+.top10-item .info { flex: 1; min-width: 0; }
+.top10-item .info .main { font-size: 13px; }
+.top10-item .info .sub { font-size: 11px; color: var(--text3); }
+.top10-item .prob { font-size: 14px; font-weight: 700; color: var(--accent); font-family: 'SF Mono', monospace; }
 
-/* Bottom slider */
-.bottom-bar {
-  flex-shrink: 0; background: var(--bg2); border-top: 1px solid var(--border);
-  padding: 10px 24px 14px;
+.map-slider-area {
+  flex-shrink: 0; padding: 8px 24px 12px; background: var(--bg2);
+  border-top: 1px solid var(--border);
 }
-.slider-container { position: relative; padding: 8px 0 0; }
-.slider-container input[type=range] {
-  width: 100%; height: 6px; -webkit-appearance: none; appearance: none;
-  background: linear-gradient(to right, var(--border), var(--accent));
+.map-slider-area input[type=range] {
+  width: 100%; height: 5px; -webkit-appearance: none; appearance: none;
+  background: linear-gradient(90deg, var(--border), var(--accent));
   border-radius: 3px; outline: none; cursor: pointer;
 }
-.slider-container input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 20px; height: 20px;
-  background: var(--accent); border-radius: 50%; border: 2px solid var(--bg);
-  box-shadow: 0 0 8px rgba(240,136,62,0.4); cursor: pointer;
+.map-slider-area input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px;
+  background: var(--accent); border-radius: 50%; border: 2px solid var(--bg2);
+  cursor: pointer; box-shadow: 0 0 8px rgba(232,122,62,0.3);
 }
-.slider-labels {
-  display: flex; justify-content: space-between; margin-top: 4px;
-  font-size: 10px; color: var(--text2); letter-spacing: 0.3px;
+.slider-labels { display: flex; justify-content: space-between; margin-top: 3px; }
+.slider-labels span {
+  font-size: 9px; color: var(--text3); cursor: pointer; padding: 2px 3px;
+  border-radius: 3px; transition: all 0.15s; white-space: nowrap;
 }
-.slider-labels span { cursor: pointer; padding: 2px 4px; border-radius: 3px; transition: all 0.15s; }
 .slider-labels span:hover { color: var(--text); background: var(--bg3); }
 .slider-labels span.active { color: var(--accent); font-weight: 600; }
 
-/* Detail panel overlay */
-.detail-overlay {
-  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center;
+/* ====== DRAW SECTION ====== */
+#draw-section {
+  background: linear-gradient(180deg, var(--bg2) 0%, var(--bg) 100%);
+  text-align: center;
 }
-.detail-overlay.show { display: flex; }
-.detail-card {
+.draw-btn {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 18px 52px; border: none; border-radius: 50px;
+  background: linear-gradient(135deg, var(--accent), #d46a30);
+  color: #fff; font-size: 20px; font-weight: 700; cursor: pointer;
+  transition: all 0.3s; font-family: inherit;
+  box-shadow: 0 6px 30px rgba(232,122,62,0.3);
+  margin: 24px 0;
+}
+.draw-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 40px rgba(232,122,62,0.4); }
+.draw-btn:active { transform: translateY(0); }
+.draw-btn .icon { font-size: 28px; }
+.draw-count { font-size: 14px; color: var(--text3); margin-bottom: 16px; }
+.draw-count strong { color: var(--text2); }
+
+.life-card {
+  display: none; max-width: 600px; margin: 0 auto;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 16px; padding: 32px; text-align: left;
+  position: relative; overflow: hidden;
+}
+.life-card.show { display: block; animation: fadeSlideUp 0.5s ease; }
+@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.life-card .era-tag {
+  display: inline-block; font-size: 11px; letter-spacing: 2px;
+  padding: 3px 12px; border-radius: 12px; margin-bottom: 12px;
+}
+.life-card .year { font-size: 42px; font-weight: 900; letter-spacing: -2px; line-height: 1; margin-bottom: 4px; }
+.life-card .location { font-size: 16px; color: var(--text2); margin-bottom: 20px; }
+.life-card .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.life-card .detail-item { padding: 10px; background: var(--bg3); border-radius: 8px; }
+.life-card .detail-item .lbl { font-size: 11px; color: var(--text3); letter-spacing: 0.5px; }
+.life-card .detail-item .val { font-size: 16px; font-weight: 600; margin-top: 2px; }
+.life-card .life-desc {
+  margin-top: 16px; padding: 14px 16px; background: var(--bg3);
+  border-radius: 8px; font-size: 14px; color: var(--text2); line-height: 1.7;
+  border-left: 3px solid var(--accent);
+}
+.life-card .life-end {
+  margin-top: 12px; font-size: 13px; color: var(--red); font-weight: 500;
+}
+.life-card .life-stats {
+  margin-top: 14px; display: flex; gap: 12px; font-size: 12px; color: var(--text3);
+}
+.life-card .life-stats span { background: var(--bg3); padding: 3px 10px; border-radius: 12px; }
+
+/* ====== SOURCES SECTION ====== */
+#sources-section { background: var(--bg); }
+.sources-list { display: grid; gap: 12px; max-width: 700px; }
+.source-item {
+  display: flex; gap: 14px; padding: 14px 16px; background: var(--bg2);
+  border-radius: 8px; border: 1px solid var(--border); font-size: 14px;
+}
+.source-item .idx { width: 24px; font-size: 12px; color: var(--text3); flex-shrink: 0; font-weight: 600; }
+.source-item .author { font-weight: 600; color: var(--accent3); }
+.source-item .work { color: var(--text2); }
+.source-item .note { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.uncertainty-box {
+  max-width: 700px; margin-top: 24px; padding: 16px 20px;
+  background: var(--bg2); border-radius: 8px; border: 1px solid var(--border);
+}
+.uncertainty-box h4 { font-size: 14px; margin-bottom: 10px; }
+.uncertainty-item { display: flex; align-items: center; gap: 12px; margin: 6px 0; font-size: 13px; }
+.uncertainty-item .bar { height: 6px; border-radius: 3px; flex-shrink: 0; }
+
+/* ====== OVERLAY ====== */
+.overlay {
+  display: none; position: fixed; top:0; left:0; right:0; bottom:0;
+  background: rgba(0,0,0,0.6); z-index: 3000; align-items: center; justify-content: center;
+}
+.overlay.show { display: flex; }
+.overlay-card {
   background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
-  padding: 24px 28px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;
+  padding: 24px 28px; max-width: 520px; width: 90%; max-height: 80vh; overflow-y: auto;
 }
-.detail-card h3 { font-size: 20px; margin-bottom: 4px; }
-.detail-card .close {
-  float: right; cursor: pointer; font-size: 24px; color: var(--text2);
+.overlay-card .close {
+  float: right; cursor: pointer; font-size: 28px; color: var(--text3);
   line-height: 1; padding: 4px;
 }
-.detail-card .close:hover { color: var(--text); }
-.detail-card .meta { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
-.detail-card table { width: 100%; font-size: 14px; border-collapse: collapse; }
-.detail-card th, .detail-card td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border); }
-.detail-card th { color: var(--text2); font-weight: 400; font-size: 12px; }
-.detail-card .prob-bar {
-  height: 8px; border-radius: 4px; background: var(--prob-bg); overflow: hidden; margin-top: 10px;
-}
-.detail-card .prob-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
-.detail-card .footnote { font-size: 11px; color: var(--text2); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
-.detail-card .footnote a { color: var(--accent2); }
+.overlay-card .close:hover { color: var(--text); }
+.overlay-card h3 { font-size: 20px; margin-bottom: 6px; }
+.overlay-card table { width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 12px; }
+.overlay-card th, .overlay-card td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+.overlay-card th { color: var(--text3); font-weight: 400; font-size: 11px; }
 
-/* Sources panel toggle */
-.sources-toggle {
-  position: absolute; top: 12px; right: 12px; z-index: 1000;
-  background: rgba(13,17,23,0.9); border: 1px solid var(--border);
-  color: var(--text2); padding: 6px 12px; border-radius: 6px;
-  cursor: pointer; font-size: 12px; font-family: inherit;
-}
-.sources-toggle:hover { color: var(--text); border-color: var(--text2); }
-
-/* Responsive */
-@media (max-width: 768px) {
-  .main-content { flex-direction: column; }
-  .side-panel { width: 100%; max-height: 40vh; }
-  .header h1 { font-size: 16px; }
-  .header .stats { font-size: 11px; }
-  .period-info .period-name { font-size: 18px; }
-  .map-legend { bottom: 10px; left: 8px; font-size: 11px; min-width: 130px; }
-}
-
-/* Leaflet tweaks */
+/* ====== LEAFLET ====== */
 .leaflet-container { background: var(--bg); }
 .region-label {
-  font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.7);
-  text-shadow: 0 1px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.5);
-  pointer-events: none; font-family: 'Noto Sans SC', sans-serif;
+  font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.6);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.5);
+  pointer-events: none; white-space: nowrap;
 }
+
+/* ====== RESPONSIVE ====== */
+@media (max-width: 1024px) {
+  .map-side { width: 340px; }
+}
+@media (max-width: 768px) {
+  .grid-layout { flex-direction: column; align-items: center; }
+  .grid-container { width: 280px; gap: 3px; }
+  .grid-info .big-num { font-size: 42px; }
+  .hero-stats { gap: 24px; flex-wrap: wrap; }
+  .hero-stat .num { font-size: 28px; }
+  .map-layout { flex-direction: column; height: auto; }
+  .map-area { height: 50vh; }
+  .map-side { width: 100%; max-height: 50vh; border-left: none; border-top: 1px solid var(--border); }
+  .life-card .detail-grid { grid-template-columns: 1fr; }
+  .slider-labels span { font-size: 8px; }
+}
+
+/* ====== NAV ====== */
+.nav-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  background: rgba(10,14,20,0.85); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border); padding: 0 24px;
+  display: flex; align-items: center; height: 48px;
+}
+.nav-bar .brand { font-size: 14px; font-weight: 700; color: var(--text); }
+.nav-bar .brand span { color: var(--accent); }
+.nav-bar .links { margin-left: auto; display: flex; gap: 20px; }
+.nav-bar .links a {
+  font-size: 12px; color: var(--text3); text-decoration: none;
+  letter-spacing: 0.5px; transition: color 0.15s;
+}
+.nav-bar .links a:hover { color: var(--accent); }
 </style>
 </head>
 <body>
 
-<div class="app-container">
-  <!-- Header -->
-  <div class="header">
-    <div>
-      <h1>▎无知之幕 · <span>中国历史人口概率</span></h1>
-      <div class="subtitle">在不知道你的出生时地之前，最可能落在哪里</div>
+<!-- NAV -->
+<nav class="nav-bar">
+  <div class="brand">▎无知之幕 · <span>中国</span></div>
+  <div class="links">
+    <a href="#grid-section">规模</a>
+    <a href="#map-section">地图</a>
+    <a href="#draw-section">抽一条命</a>
+    <a href="#sources-section">来源</a>
+  </div>
+</nav>
+
+<!-- ====== HERO ====== -->
+<section class="section" id="hero">
+  <div class="hero-content">
+    <div class="hero-tag">Veil of Ignorance · China</div>
+    <h1>如果投胎到<span>中国历史</span><br>你会是谁？</h1>
+    <p class="subtitle">
+      你不知道自己会降生在哪个朝代、哪片土地、哪个阶层。<br>
+      在揭开谜底之前——最可能落在哪里？
+    </p>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num">146</div><div class="label">亿人曾在中国大地上生活过</div></div>
+      <div class="hero-stat"><div class="num smaller">~94%</div><div class="label">出生在1900年以前</div></div>
+      <div class="hero-stat"><div class="num smaller">~80%</div><div class="label">是农民或佃农</div></div>
     </div>
-    <div class="stats" id="headerStats">
-      总人口基数: <strong>~14.6B</strong> 人 · 拖动时间轴探索
+    <a class="hero-cta" href="#draw-section">🎲 抽一条命</a>
+  </div>
+  <div class="scroll-hint">↓ 向下滚动</div>
+</section>
+
+<!-- ====== GRID SECTION ====== -->
+<section class="section" id="grid-section">
+  <div class="section-inner">
+    <div class="section-title">146亿人的分布</div>
+    <div class="section-divider"></div>
+    <p class="section-subtitle">从先秦到现代，如果随机选100个中国人——他们分别出生在哪些时代？</p>
+    <div class="grid-layout">
+      <div class="grid-visual">
+        <div class="grid-container" id="gridContainer"></div>
+      </div>
+      <div class="grid-info">
+        <div class="big-num" id="eraGridCount">67</div>
+        <div class="big-label">个出生在<span id="eraGridLabel" style="color:var(--accent)">1900年以前</span></div>
+        <div id="gridLegend"></div>
+        <div class="grid-highlight">
+          <strong>你认识的帝王将相，加在一起凑不满一个格子。</strong><br>
+          中国历史绝大多数的人口，是田埂上无名的农民。
+        </div>
+      </div>
     </div>
   </div>
+</section>
 
-  <!-- Main -->
-  <div class="main-content">
-    <!-- Map -->
-    <div class="map-panel">
+<!-- ====== MAP SECTION ====== -->
+<section class="section" id="map-section">
+  <div class="map-layout">
+    <div class="map-area">
       <div id="map"></div>
-      <div class="map-legend" id="mapLegend">
-        <div class="title">当前时期 · 区域概率密度</div>
-        <div class="row"><div class="swatch" style="background:#f0883e;"></div> >1.0%</div>
-        <div class="row"><div class="swatch" style="background:#d29922;"></div> 0.3–1.0%</div>
-        <div class="row"><div class="swatch" style="background:#58a6ff;"></div> 0.1–0.3%</div>
-        <div class="row"><div class="swatch" style="background:#1c6b8f;"></div> 0.03–0.1%</div>
-        <div class="row"><div class="swatch" style="background:#0d3b4f;"></div> &lt;0.03%</div>
-      </div>
-      <button class="sources-toggle" onclick="showSources()">📚 数据来源</button>
     </div>
-
-    <!-- Side panel -->
-    <div class="side-panel">
-      <div class="period-info" id="periodInfo">
-        <div class="period-name" id="periodName">先秦</div>
-        <div class="period-years" id="periodYears">~2000 – 221 BCE</div>
-        <div class="period-pop">
-          <span>年均人口: <strong id="periodPop">15M</strong></span>
+    <div class="map-side">
+      <div class="map-period-info">
+        <div class="name" id="periodName">先秦</div>
+        <div class="years" id="periodYears">~2000–221 BCE</div>
+        <div class="stats">
           <span>时期出生: <strong id="periodBirths">981M</strong></span>
           <span>占总出生: <strong id="periodShare">6.7%</strong></span>
         </div>
       </div>
-
-      <div class="top10-section" id="top10List">
-        <div class="top10-header">
-          <span>排名 · 时期 · 区域 · 阶级</span>
-          <span>概率</span>
-        </div>
-        <div id="top10Items">加载中...</div>
+      <div class="map-top10">
+        <div class="map-top10-header"><span>时期 · 区域 · 阶级</span><span>概率</span></div>
+        <div id="top10Items"><div style="padding:20px;text-align:center;color:var(--text3)">加载中...</div></div>
+      </div>
+      <div class="map-slider-area">
+        <input type="range" id="timeSlider" min="0" max="11" value="0" step="1">
+        <div class="slider-labels" id="sliderLabels"></div>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- Bottom slider -->
-  <div class="bottom-bar">
-    <div class="slider-container">
-      <input type="range" id="timeSlider" min="0" max="11" value="0" step="1">
-      <div class="slider-labels" id="sliderLabels"></div>
+<!-- ====== DRAW SECTION ====== -->
+<section class="section" id="draw-section">
+  <div class="section-inner" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;">
+    <div class="section-title" style="text-align:center;">抽一条命</div>
+    <div class="section-divider" style="margin:12px auto 20px;"></div>
+    <p class="section-subtitle" style="text-align:center;">
+      按真实概率分布，随机抽取一个曾经生活在中国的人——<br>
+      看看你可能会是谁。
+    </p>
+    <div class="draw-count" id="drawCount">已抽取 <strong id="drawNum">0</strong> 次</div>
+    <button class="draw-btn" onclick="drawLife()"><span class="icon">🎲</span> 抽一条命</button>
+    <div class="life-card" id="lifeCard">
+      <div class="era-tag" id="lifeEraTag" style="background:rgba(232,122,62,0.15);color:var(--accent);"></div>
+      <div class="year" id="lifeYear"></div>
+      <div class="location" id="lifeLocation"></div>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="lbl">阶级</div><div class="val" id="lifeClass"></div></div>
+        <div class="detail-item"><div class="lbl">享年</div><div class="val" id="lifeAge"></div></div>
+        <div class="detail-item"><div class="lbl">概率</div><div class="val" id="lifeProb" style="color:var(--accent3)"></div></div>
+        <div class="detail-item"><div class="lbl">识字</div><div class="val" id="lifeLiteracy"></div></div>
+      </div>
+      <div class="life-desc" id="lifeDesc"></div>
+      <div class="life-end" id="lifeEnd"></div>
+      <div class="life-stats">
+        <span id="lifePeriodStat"></span>
+        <span id="lifeRegionStat"></span>
+      </div>
     </div>
   </div>
-</div>
+</section>
 
-<!-- Detail overlay -->
-<div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
-  <div class="detail-card" id="detailCard">
-    <span class="close" onclick="closeDetail()">&times;</span>
-    <h3 id="detailTitle"></h3>
-    <div class="meta" id="detailMeta"></div>
-    <table id="detailTable"></table>
-    <div class="prob-bar" id="detailProbBar">
-      <div class="prob-bar-fill" id="detailProbFill"></div>
+<!-- ====== SOURCES ====== -->
+<section class="section" id="sources-section">
+  <div class="section-inner">
+    <div class="section-title">数据来源与方法论</div>
+    <div class="section-divider"></div>
+    <p class="section-subtitle">本模型采用"坦诚其骨架"原则：扎实的出生总数、合理的区域份额、明确的不确定性。</p>
+    <div class="sources-list" id="sourcesList"></div>
+    <div class="uncertainty-box">
+      <h4>📊 不确定性范围</h4>
+      <div class="uncertainty-item"><span class="bar" style="width:50%;background:var(--red);opacity:0.6;"></span><span>公元前 2000–221年: ±40–50%</span></div>
+      <div class="uncertainty-item"><span class="bar" style="width:35%;background:var(--accent);opacity:0.6;"></span><span>秦汉–隋唐 221 BCE–907 CE: ±25–35%</span></div>
+      <div class="uncertainty-item"><span class="bar" style="width:20%;background:var(--accent2);opacity:0.7;"></span><span>宋–清中期 907–1800 CE: ±15–25%</span></div>
+      <div class="uncertainty-item"><span class="bar" style="width:10%;background:var(--accent3);opacity:0.7;"></span><span>近现代 1800 CE后: ±5–10%</span></div>
     </div>
-    <div class="footnote" id="detailFootnote"></div>
+  </div>
+</section>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeOverlay()">
+  <div class="overlay-card">
+    <span class="close" onclick="closeOverlay()">&times;</span>
+    <h3 id="overlayTitle"></h3>
+    <div id="overlayMeta" style="font-size:13px;color:var(--text2);margin-bottom:10px;"></div>
+    <div id="overlayContent"></div>
   </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ============================================================
-// DATA MODEL
-// ============================================================
-
+// ===== DATA MODEL =====
 const PERIODS = [
-  // {id, name, start, end, label, avgPop, births, regions:{}, classes:{}}
-  {
-    id: "pre-qin", name: "先秦", start: -2000, end: -221,
-    label: "~2000–221 BCE", years: 1779,
-    avgPop: 15, births: 981,
-    note: "从夏商周到春秋战国，人口缓慢增长。西周约2-5M，战国约25-30M。",
-    regions: { north: 0.18, central: 0.28, guanzhong: 0.20, jiangnan: 0.02, huguang: 0.02, sichuan: 0.05, lingnan: 0.01, northeast: 0.00, northwest: 0.12, tibet: 0.00, southwest: 0.02, mongolia: 0.10 },
-    classes: { peasant: 0.78, gentry: 0.03, artisan: 0.06, official: 0.02, slave: 0.08, other: 0.03 }
-  },
-  {
-    id: "qin-han", name: "秦汉", start: -221, end: 220,
-    label: "221 BCE – 220 CE", years: 441,
-    avgPop: 50, births: 892,
-    note: "首次统一帝国。西汉元始二年(2 CE)户籍人口约58M，现代学者调高至约60-65M。",
-    regions: { north: 0.40, central: 0.25, guanzhong: 0.15, jiangnan: 0.05, huguang: 0.04, sichuan: 0.08, lingnan: 0.02, northeast: 0.00, northwest: 0.01, tibet: 0.00, southwest: 0.00, mongolia: 0.00 },
-    classes: { peasant: 0.80, gentry: 0.04, artisan: 0.06, official: 0.02, slave: 0.05, other: 0.03 }
-  },
-  {
-    id: "six-dynasties", name: "魏晋南北朝", start: 220, end: 589,
-    label: "220–589 CE", years: 369,
-    avgPop: 28, births: 475,
-    note: "长期分裂战乱，人口大幅缩减。三国时期仅约16-20M，南方份额开始上升。",
-    regions: { north: 0.25, central: 0.20, guanzhong: 0.10, jiangnan: 0.18, huguang: 0.10, sichuan: 0.10, lingnan: 0.05, northeast: 0.01, northwest: 0.01, tibet: 0.00, southwest: 0.00, mongolia: 0.00 },
-    classes: { peasant: 0.75, gentry: 0.06, artisan: 0.05, official: 0.04, slave: 0.07, other: 0.03 }
-  },
-  {
-    id: "sui-tang", name: "隋唐", start: 589, end: 907,
-    label: "589–907 CE", years: 318,
-    avgPop: 70, births: 990,
-    note: "隋唐盛世，天宝年间约75-90M人。安史之乱后人口锐减。南北趋于均衡。",
-    regions: { north: 0.32, central: 0.20, guanzhong: 0.10, jiangnan: 0.18, huguang: 0.08, sichuan: 0.07, lingnan: 0.04, northeast: 0.01, northwest: 0.00, tibet: 0.00, southwest: 0.00, mongolia: 0.00 },
-    classes: { peasant: 0.78, gentry: 0.05, artisan: 0.07, official: 0.03, slave: 0.04, other: 0.03 }
-  },
-  {
-    id: "song-jin", name: "宋辽金", start: 907, end: 1279,
-    label: "907–1279 CE", years: 372,
-    avgPop: 115, births: 1700,
-    note: "中国人口首次突破1亿。北宋末约112M(含辽金约140M)。经济重心彻底南移。",
-    regions: { north: 0.22, central: 0.18, guanzhong: 0.07, jiangnan: 0.25, huguang: 0.12, sichuan: 0.08, lingnan: 0.06, northeast: 0.02, northwest: 0.00, tibet: 0.00, southwest: 0.00, mongolia: 0.00 },
-    classes: { peasant: 0.75, gentry: 0.06, artisan: 0.08, official: 0.03, slave: 0.04, other: 0.04 }
-  },
-  {
-    id: "yuan", name: "元", start: 1271, end: 1368,
-    label: "1271–1368 CE", years: 97,
-    avgPop: 85, births: 365,
-    note: "蒙古统治时期，人口增长放缓。北方部分地区人口减少，南方相对稳定。",
-    regions: { north: 0.18, central: 0.15, guanzhong: 0.06, jiangnan: 0.28, huguang: 0.14, sichuan: 0.07, lingnan: 0.08, northeast: 0.02, northwest: 0.01, tibet: 0.00, southwest: 0.01, mongolia: 0.00 },
-    classes: { peasant: 0.74, gentry: 0.05, artisan: 0.08, official: 0.04, slave: 0.06, other: 0.03 }
-  },
-  {
-    id: "ming", name: "明", start: 1368, end: 1644,
-    label: "1368–1644 CE", years: 276,
-    avgPop: 130, births: 1510,
-    note: "明后期人口约150M。江南商业繁荣，城镇化率领先全球。玉米、番薯传入为清人口爆炸埋下伏笔。",
-    regions: { north: 0.18, central: 0.16, guanzhong: 0.06, jiangnan: 0.25, huguang: 0.15, sichuan: 0.06, lingnan: 0.10, northeast: 0.02, northwest: 0.01, tibet: 0.00, southwest: 0.01, mongolia: 0.00 },
-    classes: { peasant: 0.74, gentry: 0.05, artisan: 0.09, official: 0.03, slave: 0.05, other: 0.04 }
-  },
-  {
-    id: "early-qing", name: "清前期", start: 1644, end: 1800,
-    label: "1644–1800 CE", years: 156,
-    avgPop: 220, births: 1440,
-    note: "人口爆发期。番薯/玉米/土豆推广+康熙雍正年间税制改革→1741年1.4亿→1790年3亿。",
-    regions: { north: 0.20, central: 0.16, guanzhong: 0.05, jiangnan: 0.20, huguang: 0.16, sichuan: 0.08, lingnan: 0.12, northeast: 0.01, northwest: 0.01, tibet: 0.00, southwest: 0.01, mongolia: 0.00 },
-    classes: { peasant: 0.78, gentry: 0.04, artisan: 0.07, official: 0.02, slave: 0.05, other: 0.04 }
-  },
-  {
-    id: "late-qing", name: "清后期", start: 1800, end: 1912,
-    label: "1800–1912 CE", years: 112,
-    avgPop: 400, births: 1792,
-    note: "人口突破4亿。太平天国(1850-1864)导致2000-3000万人死亡。晚清社会危机加剧。",
-    regions: { north: 0.20, central: 0.15, guanzhong: 0.05, jiangnan: 0.18, huguang: 0.16, sichuan: 0.10, lingnan: 0.13, northeast: 0.01, northwest: 0.01, tibet: 0.00, southwest: 0.01, mongolia: 0.00 },
-    classes: { peasant: 0.77, gentry: 0.04, artisan: 0.07, official: 0.02, slave: 0.05, other: 0.05 }
-  },
-  {
-    id: "republic", name: "民国", start: 1912, end: 1949,
-    label: "1912–1949 CE", years: 37,
-    avgPop: 480, births: 675,
-    note: "战乱频仍（军阀混战、抗日战争、国共内战）。1949年人口约5.5亿。",
-    regions: { north: 0.18, central: 0.14, guanzhong: 0.04, jiangnan: 0.17, huguang: 0.15, sichuan: 0.12, lingnan: 0.13, northeast: 0.04, northwest: 0.02, tibet: 0.00, southwest: 0.01, mongolia: 0.00 },
-    classes: { peasant: 0.75, worker: 0.05, artisan: 0.06, official: 0.03, soldier: 0.03, other: 0.08 }
-  },
-  {
-    id: "prc-early", name: "现代·前期", start: 1949, end: 1978,
-    label: "1949–1978 CE", years: 29,
-    avgPop: 780, births: 820,
-    note: "高出生率(35-40‰)→1960s年均2000万+出生。1970s计划生育起步，出生率开始下降。",
-    regions: { north: 0.16, central: 0.13, guanzhong: 0.04, jiangnan: 0.15, huguang: 0.14, sichuan: 0.12, lingnan: 0.12, northeast: 0.06, northwest: 0.04, tibet: 0.00, southwest: 0.03, mongolia: 0.01 },
-    classes: { peasant: 0.82, worker: 0.10, artisan: 0.02, official: 0.03, soldier: 0.01, other: 0.02 }
-  },
-  {
-    id: "prc-recent", name: "现代·后期", start: 1978, end: 2020,
-    label: "1978–2020 CE", years: 42,
-    avgPop: 1200, births: 1410,
-    note: "改革开放+独生子女政策。出生率从20‰降至10‰以下。总人口从9.6亿增至14亿。大规模城镇化。",
-    regions: { north: 0.14, central: 0.12, guanzhong: 0.04, jiangnan: 0.15, huguang: 0.13, sichuan: 0.10, lingnan: 0.15, northeast: 0.05, northwest: 0.04, tibet: 0.00, southwest: 0.06, mongolia: 0.02 },
-    classes: { peasant: 0.40, worker: 0.28, artisan: 0.05, official: 0.06, soldier: 0.01, other: 0.20 }
-  }
+  { id:"pre-qin", name:"先秦", start:-2000, end:-221, label:"~2000–221 BCE", years:1779, avgPop:15, births:981, color:"#6b4c3b",
+    note:"从夏商周到春秋战国，人口缓慢增长。西周约2-5M，战国约25-30M。",
+    regions:{ north:0.18, central:0.28, guanzhong:0.20, jiangnan:0.02, huguang:0.02, sichuan:0.05, lingnan:0.01, northeast:0, northwest:0.12, tibet:0, southwest:0.02, mongolia:0.10 },
+    classes:{ peasant:0.78, gentry:0.03, artisan:0.06, official:0.02, slave:0.08, other:0.03 } },
+  { id:"qin-han", name:"秦汉", start:-221, end:220, label:"221 BCE – 220 CE", years:441, avgPop:50, births:892, color:"#8b5a2b",
+    note:"首次统一帝国。西汉元始二年(2 CE)户籍人口约58M，现代学者调高至约60-65M。",
+    regions:{ north:0.40, central:0.25, guanzhong:0.15, jiangnan:0.05, huguang:0.04, sichuan:0.08, lingnan:0.02, northeast:0, northwest:0.01, tibet:0, southwest:0, mongolia:0 },
+    classes:{ peasant:0.80, gentry:0.04, artisan:0.06, official:0.02, slave:0.05, other:0.03 } },
+  { id:"six-dynasties", name:"魏晋南北朝", start:220, end:589, label:"220–589 CE", years:369, avgPop:28, births:475, color:"#7a6a4a",
+    note:"长期分裂战乱，人口大幅缩减。三国时期仅约16-20M，南方份额开始上升。",
+    regions:{ north:0.25, central:0.20, guanzhong:0.10, jiangnan:0.18, huguang:0.10, sichuan:0.10, lingnan:0.05, northeast:0.01, northwest:0.01, tibet:0, southwest:0, mongolia:0 },
+    classes:{ peasant:0.75, gentry:0.06, artisan:0.05, official:0.04, slave:0.07, other:0.03 } },
+  { id:"sui-tang", name:"隋唐", start:589, end:907, label:"589–907 CE", years:318, avgPop:70, births:990, color:"#a67c52",
+    note:"隋唐盛世，天宝年间约75-90M人。安史之乱后人口锐减。南北趋于均衡。",
+    regions:{ north:0.32, central:0.20, guanzhong:0.10, jiangnan:0.18, huguang:0.08, sichuan:0.07, lingnan:0.04, northeast:0.01, northwest:0, tibet:0, southwest:0, mongolia:0 },
+    classes:{ peasant:0.78, gentry:0.05, artisan:0.07, official:0.03, slave:0.04, other:0.03 } },
+  { id:"song-jin", name:"宋辽金", start:907, end:1279, label:"907–1279 CE", years:372, avgPop:115, births:1700, color:"#c49a4a",
+    note:"中国人口首次突破1亿。北宋末约112M(含辽金约140M)。经济重心彻底南移。",
+    regions:{ north:0.22, central:0.18, guanzhong:0.07, jiangnan:0.25, huguang:0.12, sichuan:0.08, lingnan:0.06, northeast:0.02, northwest:0, tibet:0, southwest:0, mongolia:0 },
+    classes:{ peasant:0.75, gentry:0.06, artisan:0.08, official:0.03, slave:0.04, other:0.04 } },
+  { id:"yuan", name:"元", start:1271, end:1368, label:"1271–1368 CE", years:97, avgPop:85, births:365, color:"#8b7d6b",
+    note:"蒙古统治时期，人口增长放缓。北方部分地区人口减少，南方相对稳定。",
+    regions:{ north:0.18, central:0.15, guanzhong:0.06, jiangnan:0.28, huguang:0.14, sichuan:0.07, lingnan:0.08, northeast:0.02, northwest:0.01, tibet:0, southwest:0.01, mongolia:0 },
+    classes:{ peasant:0.74, gentry:0.05, artisan:0.08, official:0.04, slave:0.06, other:0.03 } },
+  { id:"ming", name:"明", start:1368, end:1644, label:"1368–1644 CE", years:276, avgPop:130, births:1510, color:"#c47a3a",
+    note:"明后期人口约150M。江南商业繁荣，城镇化率领先全球。玉米、番薯传入为清人口爆炸埋下伏笔。",
+    regions:{ north:0.18, central:0.16, guanzhong:0.06, jiangnan:0.25, huguang:0.15, sichuan:0.06, lingnan:0.10, northeast:0.02, northwest:0.01, tibet:0, southwest:0.01, mongolia:0 },
+    classes:{ peasant:0.74, gentry:0.05, artisan:0.09, official:0.03, slave:0.05, other:0.04 } },
+  { id:"early-qing", name:"清前期", start:1644, end:1800, label:"1644–1800 CE", years:156, avgPop:220, births:1440, color:"#d4a040",
+    note:"人口爆发期。番薯/玉米/土豆推广+税制改革→1741年1.4亿→1790年3亿。",
+    regions:{ north:0.20, central:0.16, guanzhong:0.05, jiangnan:0.20, huguang:0.16, sichuan:0.08, lingnan:0.12, northeast:0.01, northwest:0.01, tibet:0, southwest:0.01, mongolia:0 },
+    classes:{ peasant:0.78, gentry:0.04, artisan:0.07, official:0.02, slave:0.05, other:0.04 } },
+  { id:"late-qing", name:"清后期", start:1800, end:1912, label:"1800–1912 CE", years:112, avgPop:400, births:1792, color:"#d4883a",
+    note:"人口突破4亿。太平天国(1850-1864)导致2000-3000万人死亡。晚清社会危机加剧。",
+    regions:{ north:0.20, central:0.15, guanzhong:0.05, jiangnan:0.18, huguang:0.16, sichuan:0.10, lingnan:0.13, northeast:0.01, northwest:0.01, tibet:0, southwest:0.01, mongolia:0 },
+    classes:{ peasant:0.77, gentry:0.04, artisan:0.07, official:0.02, slave:0.05, other:0.05 } },
+  { id:"republic", name:"民国", start:1912, end:1949, label:"1912–1949 CE", years:37, avgPop:480, births:675, color:"#6a8a6a",
+    note:"战乱频仍（军阀混战、抗日战争、国共内战）。1949年人口约5.5亿。",
+    regions:{ north:0.18, central:0.14, guanzhong:0.04, jiangnan:0.17, huguang:0.15, sichuan:0.12, lingnan:0.13, northeast:0.04, northwest:0.02, tibet:0, southwest:0.01, mongolia:0 },
+    classes:{ peasant:0.75, worker:0.05, artisan:0.06, official:0.03, soldier:0.03, other:0.08 } },
+  { id:"prc-early", name:"现代·前期", start:1949, end:1978, label:"1949–1978 CE", years:29, avgPop:780, births:820, color:"#4a7a8a",
+    note:"高出生率(35-40‰)→1960s年均2000万+出生。1970s计划生育起步。",
+    regions:{ north:0.16, central:0.13, guanzhong:0.04, jiangnan:0.15, huguang:0.14, sichuan:0.12, lingnan:0.12, northeast:0.06, northwest:0.04, tibet:0, southwest:0.03, mongolia:0.01 },
+    classes:{ peasant:0.82, worker:0.10, artisan:0.02, official:0.03, soldier:0.01, other:0.02 } },
+  { id:"prc-recent", name:"现代·后期", start:1978, end:2020, label:"1978–2020 CE", years:42, avgPop:1200, births:1410, color:"#3a8a7a",
+    note:"改革开放+独生子女政策。总人口从9.6亿增至14亿。大规模城镇化。",
+    regions:{ north:0.14, central:0.12, guanzhong:0.04, jiangnan:0.15, huguang:0.13, sichuan:0.10, lingnan:0.15, northeast:0.05, northwest:0.04, tibet:0, southwest:0.06, mongolia:0.02 },
+    classes:{ peasant:0.40, worker:0.28, artisan:0.05, official:0.06, soldier:0.01, other:0.20 } }
 ];
+const TOTAL_BIRTHS = PERIODS.reduce((s,p)=>s+p.births,0);
 
-const TOTAL_BIRTHS = PERIODS.reduce((s, p) => s + p.births, 0);
-
-// Region definitions for map
 const REGIONS = {
-  north: { name: "华北", nameEn: "North China", lat: 38.5, lng: 117, prob: 0 },
-  central: { name: "中原", nameEn: "Central Plains", lat: 34.5, lng: 114.5, prob: 0 },
-  guanzhong: { name: "关中", nameEn: "Guanzhong", lat: 35, lng: 109, prob: 0 },
-  jiangnan: { name: "江南", nameEn: "Jiangnan", lat: 31, lng: 120, prob: 0 },
-  huguang: { name: "湖广", nameEn: "Huguang", lat: 29, lng: 113, prob: 0 },
-  sichuan: { name: "四川", nameEn: "Sichuan", lat: 30.5, lng: 105, prob: 0 },
-  lingnan: { name: "岭南", nameEn: "Lingnan", lat: 24, lng: 114, prob: 0 },
-  northeast: { name: "东北", nameEn: "Northeast", lat: 46, lng: 127, prob: 0 },
-  northwest: { name: "西北", nameEn: "Northwest", lat: 41, lng: 88, prob: 0 },
-  mongolia: { name: "蒙古", nameEn: "Mongolia", lat: 44, lng: 112, prob: 0 },
-  tibet: { name: "青藏", nameEn: "Tibet", lat: 32, lng: 88, prob: 0 },
-  southwest: { name: "西南", nameEn: "Southwest", lat: 26, lng: 104, prob: 0 }
+  north:{ name:"华北", lat:38.5, lng:117, nameEn:"North China" },
+  central:{ name:"中原", lat:34.5, lng:114.5, nameEn:"Central Plains" },
+  guanzhong:{ name:"关中", lat:35, lng:109, nameEn:"Guanzhong" },
+  jiangnan:{ name:"江南", lat:31, lng:120, nameEn:"Jiangnan" },
+  huguang:{ name:"湖广", lat:29, lng:113, nameEn:"Huguang" },
+  sichuan:{ name:"四川", lat:30.5, lng:105, nameEn:"Sichuan" },
+  lingnan:{ name:"岭南", lat:24, lng:114, nameEn:"Lingnan" },
+  northeast:{ name:"东北", lat:46, lng:127, nameEn:"Northeast" },
+  northwest:{ name:"西北", lat:41, lng:88, nameEn:"Northwest" },
+  mongolia:{ name:"蒙古", lat:44, lng:112, nameEn:"Mongolia" },
+  tibet:{ name:"青藏", lat:32, lng:88, nameEn:"Tibet" },
+  southwest:{ name:"西南", lat:26, lng:104, nameEn:"Southwest" }
 };
-
 const CLASSES = {
-  peasant: { name: "农民/佃农", desc: "自耕农、佃农、农业劳动者", icon: "🌾" },
-  gentry: { name: "地主/士绅", desc: "地主、乡绅、富户", icon: "🏠" },
-  artisan: { name: "工匠/商人", desc: "手工业者、匠人、商贩、行商", icon: "🔧" },
-  official: { name: "士人/官吏", desc: "读书人、科举出身、各级官员、吏员", icon: "📜" },
-  slave: { name: "奴婢/贱民", desc: "家奴、官奴、倡优、丐户等", icon: "⛓️" },
-  worker: { name: "工人/职员", desc: "产业工人、企业职员、服务业人员", icon: "🏭" },
-  soldier: { name: "军人", desc: "士兵、将领、武装力量人员", icon: "⚔️" },
-  other: { name: "其他", desc: "僧道、医卜、流民、城市贫民等", icon: "·" }
+  peasant:{ name:"农民/佃农", icon:"🌾", desc:"自耕农、佃农、农业劳动者", literacy:0.05 },
+  gentry:{ name:"地主/士绅", icon:"🏠", desc:"地主、乡绅、富户", literacy:0.60 },
+  artisan:{ name:"工匠/商人", icon:"🔧", desc:"手工业者、匠人、商贩", literacy:0.20 },
+  official:{ name:"士人/官吏", icon:"📜", desc:"读书人、科举出身、各级官员", literacy:0.90 },
+  slave:{ name:"奴婢/贱民", icon:"⛓️", desc:"家奴、官奴、倡优、丐户", literacy:0.02 },
+  worker:{ name:"工人/职员", icon:"🏭", desc:"产业工人、企业职员、服务业", literacy:0.85 },
+  soldier:{ name:"军人", icon:"⚔️", desc:"士兵、将领、武装力量", literacy:0.30 },
+  other:{ name:"其他", icon:"·", desc:"僧道、医卜、流民、城市贫民", literacy:0.30 }
 };
-
-// Region polygon coordinates (approximate)
 const REGION_POLYGONS = {
-  north: [
-    [42.5, 114.0], [42.5, 119.5], [41.0, 122.0], [39.5, 121.5], [38.0, 119.0],
-    [36.5, 120.5], [35.5, 119.0], [35.5, 116.5], [36.5, 115.0], [38.0, 114.0],
-    [39.5, 113.5], [41.0, 113.0], [42.5, 114.0]
-  ],
-  central: [
-    [36.0, 115.0], [35.5, 117.5], [34.5, 120.0], [33.5, 119.0], [33.0, 117.0],
-    [32.5, 114.5], [33.0, 112.5], [34.0, 112.0], [35.5, 112.5], [36.0, 115.0]
-  ],
-  guanzhong: [
-    [37.5, 107.5], [37.5, 110.5], [36.0, 111.5], [34.5, 111.0], [33.5, 109.5],
-    [34.0, 107.5], [34.5, 106.5], [36.0, 106.5], [37.5, 107.5]
-  ],
-  jiangnan: [
-    [33.5, 119.0], [34.5, 120.0], [33.0, 122.5], [31.5, 123.0], [30.0, 122.5],
-    [28.5, 121.5], [28.0, 119.5], [28.5, 117.5], [29.5, 116.5], [31.0, 117.5],
-    [32.5, 118.5], [33.5, 119.0]
-  ],
-  huguang: [
-    [33.0, 112.5], [32.5, 114.5], [32.0, 116.5], [31.0, 117.5], [29.5, 116.5],
-    [28.0, 116.0], [27.0, 114.5], [26.5, 112.5], [27.5, 110.5], [29.0, 111.0],
-    [30.5, 111.5], [32.0, 112.0], [33.0, 112.5]
-  ],
-  sichuan: [
-    [33.5, 104.0], [33.0, 107.5], [31.5, 108.5], [29.5, 108.0], [28.0, 107.0],
-    [27.5, 104.5], [28.0, 102.5], [29.0, 100.5], [31.0, 100.0], [32.5, 102.5],
-    [33.5, 104.0]
-  ],
-  lingnan: [
-    [27.0, 114.5], [28.0, 116.0], [27.0, 119.0], [25.5, 120.0], [23.5, 118.5],
-    [22.5, 116.0], [21.5, 113.5], [21.0, 110.0], [22.5, 108.0], [24.0, 108.5],
-    [25.5, 110.5], [27.0, 114.5]
-  ],
-  northeast: [
-    [40.5, 119.0], [42.0, 119.5], [43.5, 121.0], [45.0, 123.0], [46.5, 125.0],
-    [48.0, 127.5], [50.0, 128.0], [52.0, 130.0], [53.0, 128.0], [50.5, 127.0],
-    [48.5, 124.5], [46.5, 122.0], [44.5, 119.5], [42.5, 118.0], [40.5, 119.0]
-  ],
-  northwest: [
-    [35.0, 106.0], [37.0, 106.0], [38.5, 106.5], [40.0, 106.0], [41.5, 104.0],
-    [42.5, 100.0], [43.5, 95.0], [45.0, 90.0], [47.0, 85.0], [47.5, 82.0],
-    [44.0, 80.0], [40.0, 78.0], [37.0, 78.0], [36.0, 82.0], [35.5, 88.0],
-    [36.0, 94.0], [35.5, 100.0], [35.0, 104.0], [35.0, 106.0]
-  ],
-  mongolia: [
-    [42.5, 108.0], [44.0, 108.0], [46.0, 109.0], [48.0, 108.0], [50.0, 110.0],
-    [50.0, 114.0], [48.5, 117.5], [47.0, 119.0], [45.0, 119.0], [43.0, 117.0],
-    [42.0, 114.5], [42.5, 108.0]
-  ],
-  tibet: [
-    [36.0, 78.0], [36.0, 82.0], [35.5, 86.0], [35.0, 90.0], [34.0, 93.5],
-    [32.0, 95.0], [30.0, 97.0], [28.5, 97.5], [27.0, 95.0], [26.5, 92.0],
-    [27.0, 88.0], [27.5, 84.0], [28.0, 80.0], [28.5, 78.0], [31.0, 76.0],
-    [34.0, 76.0], [36.0, 78.0]
-  ],
-  southwest: [
-    [28.5, 107.0], [28.5, 109.0], [27.0, 109.5], [26.0, 108.5], [24.5, 106.0],
-    [23.5, 104.0], [22.5, 102.5], [22.0, 100.5], [23.5, 99.0], [25.0, 98.5],
-    [26.5, 100.0], [27.5, 100.5], [28.0, 102.5], [28.5, 105.5], [28.5, 107.0]
-  ]
+  north:[[42.5,114],[42.5,119.5],[41,122],[39.5,121.5],[38,119],[36.5,120.5],[35.5,119],[35.5,116.5],[36.5,115],[38,114],[39.5,113.5],[41,113],[42.5,114]],
+  central:[[36,115],[35.5,117.5],[34.5,120],[33.5,119],[33,117],[32.5,114.5],[33,112.5],[34,112],[35.5,112.5],[36,115]],
+  guanzhong:[[37.5,107.5],[37.5,110.5],[36,111.5],[34.5,111],[33.5,109.5],[34,107.5],[34.5,106.5],[36,106.5],[37.5,107.5]],
+  jiangnan:[[33.5,119],[34.5,120],[33,122.5],[31.5,123],[30,122.5],[28.5,121.5],[28,119.5],[28.5,117.5],[29.5,116.5],[31,117.5],[32.5,118.5],[33.5,119]],
+  huguang:[[33,112.5],[32.5,114.5],[32,116.5],[31,117.5],[29.5,116.5],[28,116],[27,114.5],[26.5,112.5],[27.5,110.5],[29,111],[30.5,111.5],[32,112],[33,112.5]],
+  sichuan:[[33.5,104],[33,107.5],[31.5,108.5],[29.5,108],[28,107],[27.5,104.5],[28,102.5],[29,100.5],[31,100],[32.5,102.5],[33.5,104]],
+  lingnan:[[27,114.5],[28,116],[27,119],[25.5,120],[23.5,118.5],[22.5,116],[21.5,113.5],[21,110],[22.5,108],[24,108.5],[25.5,110.5],[27,114.5]],
+  northeast:[[40.5,119],[42,119.5],[43.5,121],[45,123],[46.5,125],[48,127.5],[50,128],[52,130],[53,128],[50.5,127],[48.5,124.5],[46.5,122],[44.5,119.5],[42.5,118],[40.5,119]],
+  northwest:[[35,106],[37,106],[38.5,106.5],[40,106],[41.5,104],[42.5,100],[43.5,95],[45,90],[47,85],[47.5,82],[44,80],[40,78],[37,78],[36,82],[35.5,88],[36,94],[35.5,100],[35,104],[35,106]],
+  mongolia:[[42.5,108],[44,108],[46,109],[48,108],[50,110],[50,114],[48.5,117.5],[47,119],[45,119],[43,117],[42,114.5],[42.5,108]],
+  tibet:[[36,78],[36,82],[35.5,86],[35,90],[34,93.5],[32,95],[30,97],[28.5,97.5],[27,95],[26.5,92],[27,88],[27.5,84],[28,80],[28.5,78],[31,76],[34,76],[36,78]],
+  southwest:[[28.5,107],[28.5,109],[27,109.5],[26,108.5],[24.5,106],[23.5,104],[22.5,102.5],[22,100.5],[23.5,99],[25,98.5],[26.5,100],[27.5,100.5],[28,102.5],[28.5,105.5],[28.5,107]]
 };
 
-// ============================================================
-// PROBABILITY CALCULATOR
-// ============================================================
+// ===== PROBABILITY =====
+function getProbResults(periodIdx) {
+  const p = PERIODS[periodIdx]; const r=[];
+  for(const [rk,rs] of Object.entries(p.regions))
+    if(rs>0) for(const [ck,cs] of Object.entries(p.classes))
+      if(cs>0) r.push({periodIdx,region:rk,class:ck,prob:(p.births/TOTAL_BIRTHS)*rs*cs});
+  return r.sort((a,b)=>b.prob-a.prob);
+}
+function getRegionProb(rk, pi) {
+  const p=PERIODS[pi]; return (p.births/TOTAL_BIRTHS)*(p.regions[rk]||0);
+}
 
-function calcProbabilities(periodIdx) {
-  const p = PERIODS[periodIdx];
-  const results = [];
-  for (const [rkey, rshare] of Object.entries(p.regions)) {
-    if (rshare === 0) continue;
-    for (const [ckey, cshare] of Object.entries(p.classes)) {
-      if (cshare === 0) continue;
-      const prob = (p.births / TOTAL_BIRTHS) * rshare * cshare;
-      results.push({ periodIdx, region: rkey, class: ckey, prob });
+// ===== 100-PERSON GRID =====
+function renderGrid() {
+  const total = PERIODS.reduce((s,p)=>s+p.births,0);
+  const grid = document.getElementById('gridContainer');
+  const dots = [];
+  for(let i=0;i<100;i++) {
+    const r = Math.random();
+    let cum=0, chosen=PERIODS.length-1;
+    for(let j=0;j<PERIODS.length;j++) {
+      cum += PERIODS[j].births/total;
+      if(r<=cum) { chosen=j; break; }
     }
+    dots.push(PERIODS[chosen]);
   }
-  results.sort((a, b) => b.prob - a.prob);
-  return results;
+  grid.innerHTML = dots.map(p =>
+    `<div class="grid-dot" style="background:${p.color}" title="${p.name}"></div>`
+  ).join('');
+
+  // Count by era
+  const counts = {};
+  dots.forEach(p => { counts[p.name] = (counts[p.name]||0)+1; });
+
+  // Pre-1900 count
+  const pre1900 = PERIODS.slice(0,9).reduce((s,p) => s + (counts[p.name]||0), 0);
+  const labelEl = document.getElementById('eraGridLabel');
+  labelEl.textContent = '1900年以前';
+  labelEl.style.color = PERIODS[PERIODS.length-3].color;
+
+  const legend = document.getElementById('gridLegend');
+  legend.innerHTML = PERIODS.map(p => {
+    const c = counts[p.name]||0;
+    return `<div class="grid-legend-item">
+      <div class="dot" style="background:${p.color}"></div>
+      <span>${p.name}</span>
+      <span class="count">– ${c}/100 人</span>
+    </div>`;
+  }).filter((_,i)=>counts[PERIODS[i].name]).join('');
+
+  document.getElementById('eraGridCount').textContent = pre1900;
 }
 
-function getRegionProb(regionKey, periodIdx) {
-  const p = PERIODS[periodIdx];
-  return (p.births / TOTAL_BIRTHS) * (p.regions[regionKey] || 0);
-}
+// ===== MAP =====
+const map = L.map('map', { center:[35,107], zoom:4, zoomControl:true, attributionControl:false });
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom:19 }).addTo(map);
+const regionLayers={}, regionLabels={};
 
-// ============================================================
-// MAP SETUP
-// ============================================================
-
-const map = L.map('map', {
-  center: [35, 107], zoom: 4,
-  zoomControl: true, attributionControl: false,
-  scrollWheelZoom: true
-});
-
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  maxZoom: 19, attribution: '&copy; <a href="https://carto.com/">CARTO</a>'
-}).addTo(map);
-
-const regionLayers = {};
-const regionLabels = {};
-
-// Function to get color based on probability
 function getProbColor(prob) {
-  if (prob > 0.01) return { fill: '#f0883e', weight: 1.5 };
-  if (prob > 0.003) return { fill: '#d29922', weight: 1.0 };
-  if (prob > 0.001) return { fill: '#58a6ff', weight: 0.8 };
-  if (prob > 0.0003) return { fill: '#1c6b8f', weight: 0.5 };
-  return { fill: '#0d3b4f', weight: 0.3 };
+  if(prob>0.01) return '#f0883e';
+  if(prob>0.003) return '#d29922';
+  if(prob>0.001) return '#58a6ff';
+  if(prob>0.0003) return '#1c6b8f';
+  return '#0d3b4f';
 }
 
-function buildMap(periodIdx) {
-  // Clear existing layers
-  Object.values(regionLayers).forEach(l => map.removeLayer(l));
-  Object.values(regionLabels).forEach(l => map.removeLayer(l));
-  Object.keys(regionLayers).forEach(k => delete regionLayers[k]);
-  Object.keys(regionLabels).forEach(k => delete regionLabels[k]);
+function buildMap(pi) {
+  Object.values(regionLayers).forEach(l=>map.removeLayer(l));
+  Object.values(regionLabels).forEach(l=>map.removeLayer(l));
+  Object.keys(regionLayers).forEach(k=>delete regionLayers[k]);
+  Object.keys(regionLabels).forEach(k=>delete regionLabels[k]);
 
-  const totalRegionProb = {};
-  for (const rkey of Object.keys(REGIONS)) {
-    totalRegionProb[rkey] = getRegionProb(rkey, periodIdx);
-  }
-
-  for (const [rkey, coords] of Object.entries(REGION_POLYGONS)) {
-    const prob = totalRegionProb[rkey];
+  for(const [rk,coords] of Object.entries(REGION_POLYGONS)) {
+    const prob = getRegionProb(rk, pi);
     const color = getProbColor(prob);
     const layer = L.polygon(coords, {
-      color: 'rgba(255,255,255,0.25)',
-      weight: color.weight,
-      fillColor: color.fill,
-      fillOpacity: 0.55 + Math.min(prob * 30, 0.35),
+      color: 'rgba(255,255,255,0.2)', weight: prob>0.003?1.2:0.5,
+      fillColor: color, fillOpacity: 0.4 + Math.min(prob*25, 0.4),
       smoothFactor: 1.5
     }).addTo(map);
-
-    const r = REGIONS[rkey];
-    layer.bindTooltip(`${r.name}\n概率: ${(prob * 100).toFixed(2)}%`, {
-      direction: 'center', className: 'region-tooltip'
-    });
-
-    layer.on('click', () => showRegionDetail(rkey, periodIdx));
-    layer.on('mouseover', function() { this.setStyle({ fillOpacity: 0.75, weight: 2 }); });
-    layer.on('mouseout', function() { this.setStyle({ fillOpacity: 0.55 + Math.min(prob * 30, 0.35), weight: color.weight }); });
-
-    regionLayers[rkey] = layer;
-
-    // Labels
-    const label = L.marker([r.lat, r.lng], {
-      icon: L.divIcon({
-        className: 'region-label',
-        html: r.name,
-        iconSize: [80, 20],
-        iconAnchor: [40, 10]
-      }),
-      interactive: false
-    }).addTo(map);
-    regionLabels[rkey] = label;
+    const r=REGIONS[rk];
+    layer.bindTooltip(`${r.name}\n该时期人口占比 ${(PERIODS[pi].regions[rk]*100).toFixed(1)}%\n全局概率 ${(prob*100).toFixed(3)}%`,{direction:'center'});
+    layer.on('click',()=>showRegionDetail(rk,pi));
+    layer.on('mouseover',function(){this.setStyle({fillOpacity:0.7,weight:1.8});});
+    layer.on('mouseout',function(){this.setStyle({fillOpacity:0.4+Math.min(prob*25,0.4),weight:prob>0.003?1.2:0.5});});
+    regionLayers[rk]=layer;
+    const lbl = L.marker([r.lat,r.lng],{icon:L.divIcon({className:'region-label',html:r.name,iconSize:[80,20],iconAnchor:[40,10]}),interactive:false}).addTo(map);
+    regionLabels[rk]=lbl;
   }
 }
 
-// ============================================================
-// TOP 10 LIST
-// ============================================================
-
-function renderTop10(periodIdx) {
-  const results = calcProbabilities(periodIdx);
-  const top10 = results.slice(0, 10);
-  const container = document.getElementById('top10Items');
-
-  container.innerHTML = top10.map((item, i) => {
-    const p = PERIODS[item.periodIdx];
-    const r = REGIONS[item.region];
-    const c = CLASSES[item.class] || { name: item.class, icon: '' };
-    const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
-    const probPct = (item.prob * 100).toFixed(3);
-
-    return `
-      <div class="top10-item ${i === 0 ? 'active' : ''}" onclick="showComboDetail(${i})" data-idx="${i}">
-        <div class="top10-rank ${rankClass}">${i + 1}</div>
-        <div class="top10-info">
-          <div class="top10-period">${c.icon} ${r.name} · ${c.name}</div>
-          <div class="top10-detail">
-            <span>${p.name}</span>
-            <span>${p.label}</span>
-          </div>
-        </div>
-        <div class="top10-prob">${probPct}%</div>
-      </div>
-    `;
+// ===== TOP 10 =====
+function renderTop10(pi) {
+  const results = getProbResults(pi).slice(0,10);
+  const el=document.getElementById('top10Items');
+  el.innerHTML = results.map((item,i)=>{
+    const p=PERIODS[item.periodIdx], r=REGIONS[item.region], c=CLASSES[item.class]||{name:item.class,icon:''};
+    const rc=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    return `<div class="top10-item" onclick="showComboDetail(${i})">
+      <div class="rank ${rc}">${i+1}</div>
+      <div class="info"><div class="main">${c.icon} ${r.name} · ${c.name}</div><div class="sub">${p.name} · ${p.label}</div></div>
+      <div class="prob">${(item.prob*100).toFixed(3)}%</div>
+    </div>`;
   }).join('');
 }
 
-// ============================================================
-// DETAIL VIEWS
-// ============================================================
+// ===== SLIDER =====
+let currentPeriod=0;
+function renderSliderLabels() {
+  const c=document.getElementById('sliderLabels');
+  c.innerHTML=PERIODS.map((p,i)=>`<span data-idx="${i}" class="${i===0?'active':''}">${p.name}</span>`).join('');
+  c.querySelectorAll('span').forEach(el=>{el.addEventListener('click',()=>{
+    document.getElementById('timeSlider').value=el.dataset.idx; updateView(parseInt(el.dataset.idx));
+  });});
+}
+function updateView(idx) {
+  currentPeriod=idx; const p=PERIODS[idx];
+  document.getElementById('periodName').textContent=p.name;
+  document.getElementById('periodYears').textContent=p.label;
+  document.getElementById('periodBirths').textContent=p.births>=1000?(p.births/1000).toFixed(1)+'B':p.births+'M';
+  document.getElementById('periodShare').textContent=(p.births/TOTAL_BIRTHS*100).toFixed(1)+'%';
+  document.querySelectorAll('#sliderLabels span').forEach(el=>el.classList.toggle('active',parseInt(el.dataset.idx)===idx));
+  buildMap(idx); renderTop10(idx);
+}
+document.getElementById('timeSlider').addEventListener('input',()=>updateView(parseInt(document.getElementById('timeSlider').value)));
 
-function showRegionDetail(rkey, periodIdx) {
-  const p = PERIODS[periodIdx];
-  const r = REGIONS[rkey];
-  const regionProb = getRegionProb(rkey, periodIdx);
+// ===== DRAW A LIFE =====
+let drawCount=0;
+const LIFE_TEMPLATES = {
+  peasant: {
+    life: ["日出而作，日入而息。春耕秋收，靠天吃饭。交完租税后所剩无几，终年劳作仅够糊口。", "终日在田间劳作，播种、除草、收割。一家几口挤在土坯房中，冬天靠一床薄被御寒。", "从会走路起就在田里帮忙，从未踏出过方圆十里的土地。一生最大的冒险，是去最近的集市卖粮食。"],
+    death: ["一个寒冷的冬天，一场伤寒带走了他。村里的大夫只会开几副草药，但已经买不起了。", "那年大旱，地里颗粒无收。逃荒的路上，再也没有站起来。", "战乱波及到村庄，在慌乱中倒在了田埂上。"]
+  },
+  gentry: {
+    life: ["家有良田百亩，收租放贷，衣食无忧。在乡里颇有威望，邻里纠纷都来找你评理。", "住在有院落的宅子里，有几个仆人使唤。儿子在私塾读书，希望有朝一日能考取功名。", "方圆几十里都敬你三分。年初收租，年底设宴，日子过得体面而从容。"],
+    death: ["染上了一场重病，请了最好的郎中，但回天乏术。家族产业因无人打理而逐渐衰落。", "改朝换代，新来的官员盯上了你家产。一场官司下来，家道中落。郁郁而终。"]
+  },
+  artisan: {
+    life: ["从小跟着师傅学手艺，十年出师。在镇子上开了间铺子，靠手艺养家糊口。", "一双巧手远近闻名。别人家婚丧嫁娶都来找你做活，日子虽不富裕但也安稳。", "走街串巷的货郎，挑着担子走过一个又一个村子。见过的人和事，比村里任何人都多。"],
+    death: ["长年累月的劳作积劳成疾，咳嗽了几年后终于躺下了。同行凑钱替你办了后事。", "世道不太平，兵匪过境时铺子被抢。你拼死护着那点家当，再也没有醒来。"]
+  },
+  official: {
+    life: ["寒窗苦读十年，一朝中举。从九品小官做起，在衙门里抄写公文、处理案牍。", "为官一任，造福一方。修桥铺路、劝课农桑，在任上做了几件实实在在的事。", "你是朝廷命官，身着官服走在街上，百姓见了都要低头让路。"],
+    death: ["朝堂之上站错了队，被贬谪到烟瘴之地。水土不服加上心中郁结，病逝在任上。", "告老还乡，在祖宅里安度晚年。儿孙绕膝，善终。"]
+  },
+  slave: {
+    life: ["生来就是奴籍，不知父母是谁。在主人家做些粗活，挨打受骂是家常便饭。", "从记事起就在大户人家做婢女，洒扫庭除、端茶倒水。主子高兴了赏顿饭，不高兴了就是一顿打。", "你是主人买来的，命不是自己的。活在最底层，从未有过选择的权利。"],
+    death: ["主人家犯了事被抄家，你被转卖到他乡。在去新主人家的路上，染病死去。", "挨了一顿毒打后伤口化脓，高烧不退。没人会为一个奴婢请大夫。"]
+  },
+  worker: {
+    life: ["在工厂里做工，每天工作十二个小时。机器轰鸣声中日复一日，月底领了薪水寄回老家。", "你是个普通职员，穿衬衫打领带，在写字楼里上班。虽然不算富裕，但比父辈好多了。", "改革开放后进城打工，从农民工做起。十几年打拼，终于在城里安了家。"],
+    death: ["工厂事故中受了重伤。虽然送到了医院，但伤势过重。工友们凑了钱帮你办了后事。", "操劳了一辈子，退休后终于可以歇歇了。心肌梗塞，走得很突然。"]
+  },
+  soldier: {
+    life: ["十七岁被征入伍，发了一把长矛就上了战场。身边的面孔换了又换，你一直在打下一场仗。", "当了半辈子兵，身上的伤疤比勋章多。从一场战争活到下一场战争，靠的是运气。", "你是乱世中的一名军人。今天还活着，但明天不一定。"],
+    death: ["战场上，一支流箭射穿了他的喉咙。他甚至没来得及喊一声，就倒在了泥泞中。", "打了败仗，撤退时落在了后面。再也没有人见过他。"]
+  },
+  other: {
+    life: ["你在寺庙里长大，一生都在诵经礼佛。外面的世界战火纷飞，但你守着青灯古佛。", "四海为家，靠算命卜卦为生。从这个村走到那个镇，看尽了人间百态。", "城里最底层的贫民，住在城角的棚屋里。每天醒来第一件事，是找今天的吃食。"],
+    death: ["没人知道你从哪里来，也没人在乎你到哪里去。一个冬日，有人发现你冻死在城隍庙门口。", "瘟疫来了，城里死了好多人。你是其中之一。"]
+  }
+};
+function pickWeighted(arr) {
+  const total=arr.reduce((s,a)=>s+a.prob,0);
+  let r=Math.random()*total, cum=0;
+  for(const a of arr) { cum+=a.prob; if(r<=cum) return a; }
+  return arr[arr.length-1];
+}
+function randInt(min,max) { return Math.floor(Math.random()*(max-min+1))+min; }
 
-  document.getElementById('detailTitle').textContent = `${r.name} · ${p.name}`;
-  document.getElementById('detailMeta').textContent = `区域概率: ${(regionProb * 100).toFixed(3)}% · 该时期南方北部分布详见下图`;
-
-  const classData = Object.entries(p.classes)
-    .filter(([k]) => p.classes[k] > 0)
-    .map(([k, v]) => {
-      const c = CLASSES[k] || { name: k, icon: '' };
-      const classProb = regionProb * v;
-      return { name: `${c.icon} ${c.name}`, share: v, prob: classProb, desc: c.desc || '' };
-    })
-    .sort((a, b) => b.prob - a.prob);
-
-  let tableHtml = `<tr><th>阶级</th><th>区域占比</th><th>全局概率</th><th>说明</th></tr>`;
-  classData.forEach(d => {
-    tableHtml += `<tr><td>${d.name}</td><td>${(d.share * 100).toFixed(1)}%</td><td>${(d.prob * 100).toFixed(3)}%</td><td style="font-size:12px;color:var(--text2)">${d.desc}</td></tr>`;
+function drawLife() {
+  // Pick from full distribution
+  const allProbs = [];
+  PERIODS.forEach((p,pi)=>{
+    for(const [rk,rs] of Object.entries(p.regions)) {
+      if(rs===0) continue;
+      for(const [ck,cs] of Object.entries(p.classes)) {
+        if(cs===0) continue;
+        allProbs.push({periodIdx:pi, region:rk, class:ck, prob:(p.births/TOTAL_BIRTHS)*rs*cs});
+      }
+    }
   });
+  const pick = pickWeighted(allProbs);
+  const p=PERIODS[pick.periodIdx];
+  const r=REGIONS[pick.region];
+  const c=CLASSES[pick.class]||{name:pick.class,icon:'·',desc:'',literacy:0.2};
 
-  document.getElementById('detailTable').innerHTML = tableHtml;
+  // Generate year
+  let year;
+  if(p.start<0 && p.end<0) year = randInt(Math.max(p.start,-1000), p.end);
+  else if(p.start<0) year = randInt(1, p.end);
+  else year = randInt(p.start, p.end);
+  const yearStr = year<0 ? `${Math.abs(year)} BCE` : `${year} CE`;
 
-  const maxProb = classData[0].prob;
-  document.getElementById('detailProbFill').style.width = '100%';
-  document.getElementById('detailProbFill').style.background = `linear-gradient(90deg, ${getProbColor(regionProb).fill}, ${getProbColor(regionProb).fill})`;
+  // Generate lifespan
+  let avgLifespan;
+  if(pick.periodIdx <= 4) { // pre-modern
+    avgLifespan = pick.class === 'peasant' ? 28 : pick.class === 'slave' ? 22 : pick.class === 'official' || pick.class === 'gentry' ? 45 : 32;
+  } else if(pick.periodIdx <= 8) { // 1800-1912
+    avgLifespan = pick.class === 'peasant' ? 30 : pick.class === 'slave' ? 24 : pick.class === 'official' || pick.class === 'gentry' ? 48 : 34;
+  } else if(pick.periodIdx === 9) { // Republic
+    avgLifespan = 38;
+  } else { // Modern
+    avgLifespan = pick.periodIdx === 10 ? 55 : pick.class === 'peasant' ? 68 : 72;
+  }
+  const age = Math.max(1, Math.round(avgLifespan + (Math.random()-0.5)*avgLifespan*0.6));
+  const literacy = c.literacy || 0.05;
+  const canRead = Math.random() < literacy;
 
-  document.getElementById('detailFootnote').innerHTML = `模型基于 <a href="#" onclick="showSources();return false;">葛剑雄《中国人口史》</a>、<a href="#" onclick="showSources();return false;">曹树基(2024)</a> 等学者数据构建。各时期人口估计有±5–50%的不确定性，详见数据来源。`;
+  // Pick life template
+  const classKey = LIFE_TEMPLATES[pick.class] ? pick.class : 'other';
+  const templates = LIFE_TEMPLATES[classKey];
+  const lifeText = templates.life[randInt(0, templates.life.length-1)];
+  const deathText = pick.periodIdx >= 10 && age > 50 ?
+    '晚年安详，在睡梦中离世。' : templates.death[randInt(0, templates.death.length-1)];
 
-  document.getElementById('detailOverlay').classList.add('show');
+  // Update card
+  document.getElementById('lifeEraTag').textContent = p.name;
+  document.getElementById('lifeEraTag').style.cssText = `background:${p.color}22;color:${p.color};display:inline-block;font-size:11px;letter-spacing:2px;padding:3px 12px;border-radius:12px;margin-bottom:12px;`;
+  document.getElementById('lifeYear').textContent = yearStr;
+  document.getElementById('lifeLocation').textContent = `${r.name} · ${c.icon} ${c.name}`;
+  document.getElementById('lifeClass').textContent = `${c.icon} ${c.name}`;
+  document.getElementById('lifeAge').textContent = `${age} 岁`;
+  document.getElementById('lifeProb').textContent = (pick.prob*100).toFixed(4) + '%';
+  document.getElementById('lifeLiteracy').textContent = canRead ? '✅ 识字' : '❌ 不识字';
+  document.getElementById('lifeDesc').textContent = lifeText;
+  document.getElementById('lifeEnd').textContent = '✝ ' + deathText;
+  document.getElementById('lifePeriodStat').textContent = '📅 ' + p.label;
+  document.getElementById('lifeRegionStat').textContent = '📍 ' + r.name;
+
+  drawCount++;
+  document.getElementById('drawNum').textContent = drawCount;
+
+  const card = document.getElementById('lifeCard');
+  card.classList.remove('show');
+  void card.offsetWidth;
+  card.classList.add('show');
+}
+
+// ===== OVERLAY =====
+function showOverlay(title, meta, content) {
+  document.getElementById('overlayTitle').textContent=title;
+  document.getElementById('overlayMeta').innerHTML=meta||'';
+  document.getElementById('overlayContent').innerHTML=content;
+  document.getElementById('overlay').classList.add('show');
+}
+function closeOverlay() { document.getElementById('overlay').classList.remove('show'); }
+
+function showRegionDetail(rk, pi) {
+  const p=PERIODS[pi], r=REGIONS[rk];
+  const rp=getRegionProb(rk,pi);
+  let html=`<p style="font-size:13px;color:var(--text2);margin-bottom:12px">${p.name} · 区域人口占比 ${(p.regions[rk]*100).toFixed(1)}% · 全局概率 ${(rp*100).toFixed(3)}%</p><table><tr><th>阶级</th><th>占比</th><th>全局概率</th></tr>`;
+  Object.entries(p.classes).filter(([,v])=>v>0).forEach(([k,v])=>{
+    const cl=CLASSES[k]||{name:k,icon:''};
+    html+=`<tr><td>${cl.icon} ${cl.name}</td><td>${(v*100).toFixed(1)}%</td><td>${(rp*v*100).toFixed(4)}%</td></tr>`;
+  });
+  html+=`</table>`;
+  showOverlay(`${r.name} · ${p.name}`, null, html);
 }
 
 function showComboDetail(idx) {
-  const results = calcProbabilities(currentPeriod);
-  const item = results[idx];
-  if (!item) return;
-
-  const p = PERIODS[item.periodIdx];
-  const r = REGIONS[item.region];
-  const c = CLASSES[item.class] || { name: item.class, icon: '', desc: '' };
-  const probPct = (item.prob * 100).toFixed(3);
-
-  document.getElementById('detailTitle').textContent = `#${idx + 1} ${r.name} · ${c.name}`;
-  document.getElementById('detailMeta').textContent = `${p.name} (${p.label}) · 全局概率 ${probPct}% · ${p.note}`;
-
-  let tableHtml = `<tr><th>维度</th><th>值</th><th>备注</th></tr>`;
-  tableHtml += `<tr><td>时期</td><td>${p.name}</td><td style="font-size:12px;color:var(--text2)">${p.years}年 · 年均约${p.avgPop}M人 · 出生${p.births}M</td></tr>`;
-  tableHtml += `<tr><td>区域</td><td>${r.name}</td><td style="font-size:12px;color:var(--text2)">该时期区域占比 ${(p.regions[item.region] * 100).toFixed(1)}%</td></tr>`;
-  tableHtml += `<tr><td>阶级</td><td>${c.icon} ${c.name}</td><td style="font-size:12px;color:var(--text2)">${c.desc || ''} · 该时期占比 ${(p.classes[item.class] * 100).toFixed(1)}%</td></tr>`;
-
-  document.getElementById('detailTable').innerHTML = tableHtml;
-
-  const barEl = document.getElementById('detailProbFill');
-  barEl.style.width = `${Math.min(item.prob * 10000, 100)}%`;
-  barEl.style.background = 'linear-gradient(90deg, #f0883e, #f0c040)';
-
-  document.getElementById('detailFootnote').innerHTML = `模型基于葛剑雄《中国人口史》、曹树基"中国人口史(1368-1953)"(Brill 2024)、赵文林/谢淑君、路遇/滕泽之等学者数据。总出生人数估计参考PRB/Haub方法。不确定性：古代±40-50%，近现代±5-10%。`;
-
-  document.getElementById('detailOverlay').classList.add('show');
+  const results=getProbResults(currentPeriod);
+  const item=results[idx]; if(!item) return;
+  const p=PERIODS[item.periodIdx], r=REGIONS[item.region], c=CLASSES[item.class]||{name:item.class,icon:''};
+  const html=`<p style="font-size:13px;color:var(--text2);margin-bottom:10px">${p.note}</p>
+    <table><tr><th>维度</th><th>值</th><th>说明</th></tr>
+    <tr><td>时期</td><td>${p.name}</td><td style="font-size:12px;color:var(--text2)">${p.years}年 · 出生${p.births>=1000?(p.births/1000).toFixed(1)+'B':p.births+'M'}</td></tr>
+    <tr><td>区域</td><td>${r.name}</td><td style="font-size:12px;color:var(--text2)">占该时期 ${(p.regions[item.region]*100).toFixed(1)}%</td></tr>
+    <tr><td>阶级</td><td>${c.icon} ${c.name}</td><td style="font-size:12px;color:var(--text2)">${c.desc||''} · 占该时期${(p.classes[item.class]*100).toFixed(1)}%</td></tr></table>`;
+  showOverlay(`#${idx+1} ${r.name} · ${c.name}`, `全局概率 ${(item.prob*100).toFixed(3)}%`, html);
 }
 
-function closeDetail() {
-  document.getElementById('detailOverlay').classList.remove('show');
-}
-
-function showSources() {
-  document.getElementById('detailTitle').textContent = '📚 数据来源与方法论';
-  document.getElementById('detailMeta').innerHTML = '本模型采用"坦诚其骨架"原则：展示扎实的出生总数、合理的区域份额、明确的不确定性。';
-
+// ===== SOURCES =====
+function renderSources() {
   const sources = [
-    { author: '葛剑雄', work: '《中国人口史》(六卷本)/《中国人口发展史》', note: '复旦大学出版社，核心参考：历代人口总量与区域分布' },
-    { author: '曹树基 (Cao Shuji)', work: '"The Population History of China (1368–1953)"', note: 'Brill, 2024. 明清至民国省级/府级人口数据' },
-    { author: '赵文林、谢淑君', work: '《中国人口史》', note: '人民出版社，历代人口估算' },
-    { author: '路遇、滕泽之', work: '《中国人口通史》', note: '山东人民出版社，宏观人口演变' },
-    { author: 'Durand, John D.', work: '"The Population Statistics of China, A.D. 2–1953"', note: 'Population Studies, 1960. 经典英文文献' },
-    { author: '何炳棣 (Ping-ti Ho)', work: '明清人口研究', note: '明-清人口社会学研究权威' },
-    { author: 'Maddison, Angus', work: '"Chinese Economic Performance in the Long Run"', note: 'OECD, 1998/2007. GDP/人口长期估算' },
-    { author: '胡焕庸', work: '胡焕庸线(1935)', note: '中国人口地理分界线。东南96% vs 西北4%的格局近百年来基本不变' },
-    { author: '陆学艺', work: '中国社会阶层结构研究', note: '2000s当代社会分层数据' },
-    { author: 'Haub, C. & Kaneda, T.', work: '"How Many People Have Ever Lived on Earth?"', note: 'PRB, 2022. 全球累计出生~117B，本模型采用一致方法推算中国部分' }
+    {author:'葛剑雄', work:'《中国人口史》(六卷本)/《中国人口发展史》', note:'复旦大学出版社，核心参考：历代人口总量与区域分布'},
+    {author:'曹树基 (Cao Shuji)', work:'"The Population History of China (1368–1953)"', note:'Brill, 2024. 明清至民国省级/府级人口数据'},
+    {author:'赵文林、谢淑君', work:'《中国人口史》', note:'人民出版社，历代人口估算'},
+    {author:'路遇、滕泽之', work:'《中国人口通史》', note:'山东人民出版社，宏观人口演变'},
+    {author:'Durand, John D.', work:'"The Population Statistics of China, A.D. 2–1953"', note:'Population Studies, 1960. 经典英文文献'},
+    {author:'何炳棣 (Ping-ti Ho)', work:'明清人口研究', note:'明-清人口社会学研究权威'},
+    {author:'Maddison, Angus', work:'"Chinese Economic Performance in the Long Run"', note:'OECD, 1998/2007. 长期经济/人口估算'},
+    {author:'胡焕庸', work:'胡焕庸线(1935)', note:'中国人口地理分界线。东南96% vs 西北4%近百年来基本不变'},
+    {author:'Haub, C. & Kaneda, T.', work:'"How Many People Have Ever Lived on Earth?"', note:'PRB, 2022. 全球累计出生~117B，本模型采用一致方法推算中国部分'}
   ];
-
-  let html = '<table><tr><th>来源</th><th>著作</th><th style="font-size:11px">说明</th></tr>';
-  sources.forEach(s => {
-    html += `<tr><td>${s.author}</td><td style="font-size:12px">${s.work}</td><td style="font-size:11px;color:var(--text2)">${s.note}</td></tr>`;
-  });
-  html += '</table>';
-  html += '<div class="footnote" style="margin-top:8px"><strong>模型局限：</strong><br>1. 公元前数据为考古推断，不确定性±40-50%<br>2. 公元0-1000年有限文字记录，不确定性±25-35%<br>3. 各时期区域份额为宏观估算，非精确统计数据<br>4. 阶级结构使用"士农工商"传统四分法+奴婢/其他，实际边界模糊<br>5. 模型中"出生人数"使用各时期平均人口×出生率×年数估算<br>6. 区域分界为示意性宏观区域，不代表精确行政边界</div>';
-
-  document.getElementById('detailTable').innerHTML = html;
-  document.getElementById('detailProbFill').style.width = '0%';
-  document.getElementById('detailFootnote').innerHTML = '';
-
-  document.getElementById('detailOverlay').classList.add('show');
+  const el=document.getElementById('sourcesList');
+  el.innerHTML = sources.map((s,i)=>`
+    <div class="source-item">
+      <div class="idx">${i+1}</div>
+      <div><div><span class="author">${s.author}</span> <span class="work">${s.work}</span></div>
+      <div class="note">${s.note}</div></div>
+    </div>`).join('');
 }
 
-// ============================================================
-// SLIDER & UI
-// ============================================================
-
-let currentPeriod = 0;
-
-function renderSliderLabels() {
-  const container = document.getElementById('sliderLabels');
-  container.innerHTML = PERIODS.map((p, i) =>
-    `<span data-idx="${i}" class="${i === currentPeriod ? 'active' : ''}">${p.name}</span>`
-  ).join('');
-  container.querySelectorAll('span').forEach(el => {
-    el.addEventListener('click', () => {
-      const idx = parseInt(el.dataset.idx);
-      document.getElementById('timeSlider').value = idx;
-      updateView(idx);
-    });
-  });
-}
-
-function updateView(idx) {
-  currentPeriod = idx;
-  const p = PERIODS[idx];
-
-  // Update period info
-  document.getElementById('periodName').textContent = p.name;
-  document.getElementById('periodYears').textContent = p.label;
-  document.getElementById('periodPop').textContent = p.avgPop + 'M';
-  document.getElementById('periodBirths').textContent = (p.births >= 1000 ? (p.births / 1000).toFixed(1) + 'B' : p.births + 'M');
-  document.getElementById('periodShare').textContent = (p.births / TOTAL_BIRTHS * 100).toFixed(1) + '%';
-  document.getElementById('headerStats').innerHTML = `总人口基数: <strong>~${(TOTAL_BIRTHS / 1000).toFixed(1)}B</strong> · ${p.name}`;
-
-  // Update slider labels
-  document.querySelectorAll('#sliderLabels span').forEach(el => {
-    el.classList.toggle('active', parseInt(el.dataset.idx) === idx);
-  });
-
-  // Update map
-  buildMap(idx);
-
-  // Update top 10
-  renderTop10(idx);
-}
-
-// Initialize slider
-const slider = document.getElementById('timeSlider');
-slider.addEventListener('input', () => updateView(parseInt(slider.value)));
-
-// ============================================================
-// INIT
-// ============================================================
-
+// ===== INIT =====
+renderGrid();
 renderSliderLabels();
 updateView(0);
-
-// Fit map to region bounds
+renderSources();
 const allCoords = Object.values(REGION_POLYGONS).flat();
 map.fitBounds(L.latLngBounds(allCoords));
 
