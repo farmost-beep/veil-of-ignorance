@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>无知之幕 · 中国历史人口概率</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --bg2: #161b22;
+  --bg3: #21262d;
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --accent: #f0883e;
+  --accent2: #58a6ff;
+  --border: #30363d;
+  --prob-high: #f0883e;
+  --prob-mid: #d29922;
+  --prob-low: #58a6ff;
+  --prob-bg: #1c2128;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; font-family: 'Noto Sans SC', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
+
+/* Layout */
+.app-container {
+  display: flex; flex-direction: column; height: 100vh;
+}
+
+/* Header */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 24px; background: var(--bg2); border-bottom: 1px solid var(--border);
+  flex-shrink: 0; z-index: 1000;
+}
+.header h1 { font-size: 20px; font-weight: 700; letter-spacing: 1px; }
+.header h1 span { color: var(--accent); }
+.header .subtitle { font-size: 12px; color: var(--text2); }
+.header .stats { font-size: 13px; color: var(--text2); text-align: right; }
+
+/* Main content */
+.main-content {
+  display: flex; flex: 1; min-height: 0;
+}
+
+/* Map panel */
+.map-panel {
+  flex: 1; position: relative; min-width: 0;
+}
+#map { width: 100%; height: 100%; }
+.map-legend {
+  position: absolute; bottom: 70px; left: 12px; z-index: 1000;
+  background: rgba(13,17,23,0.92); padding: 10px 14px; border-radius: 8px;
+  border: 1px solid var(--border); font-size: 12px; min-width: 160px;
+}
+.map-legend .title { font-weight: 500; margin-bottom: 6px; font-size: 11px; color: var(--text2); letter-spacing: 0.5px; }
+.map-legend .row { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+.map-legend .swatch { width: 16px; height: 16px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.1); }
+
+/* Side panel */
+.side-panel {
+  width: 400px; background: var(--bg2); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+}
+
+/* Period info */
+.period-info {
+  padding: 16px 20px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.period-info .period-name {
+  font-size: 22px; font-weight: 700; color: var(--accent);
+}
+.period-info .period-years { font-size: 13px; color: var(--text2); margin: 2px 0 4px; }
+.period-info .period-pop {
+  font-size: 13px; color: var(--text2); display: flex; gap: 16px;
+}
+.period-info .period-pop span strong { color: var(--text); }
+
+/* Top 10 */
+.top10-section {
+  flex: 1; overflow-y: auto; padding: 8px 0;
+}
+.top10-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 20px; font-size: 13px; color: var(--text2); letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border); margin-bottom: 4px;
+}
+.top10-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 20px; cursor: pointer; transition: background 0.15s;
+  border-bottom: 1px solid rgba(48,54,61,0.3);
+}
+.top10-item:hover { background: rgba(255,255,255,0.03); }
+.top10-item.active { background: rgba(240,136,62,0.08); border-left: 3px solid var(--accent); padding-left: 17px; }
+.top10-rank {
+  width: 24px; font-size: 14px; font-weight: 700; color: var(--text2); flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace; text-align: center;
+}
+.top10-rank.gold { color: #f0c040; }
+.top10-rank.silver { color: #a8b4c0; }
+.top10-rank.bronze { color: #cd7f32; }
+.top10-info { flex: 1; min-width: 0; }
+.top10-info .top10-period { font-size: 13px; font-weight: 500; }
+.top10-info .top10-detail { font-size: 12px; color: var(--text2); display: flex; gap: 8px; }
+.top10-info .top10-detail span { background: var(--bg); padding: 0 6px; border-radius: 3px; }
+.top10-prob {
+  font-size: 15px; font-weight: 700; color: var(--accent); flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Bottom slider */
+.bottom-bar {
+  flex-shrink: 0; background: var(--bg2); border-top: 1px solid var(--border);
+  padding: 10px 24px 14px;
+}
+.slider-container { position: relative; padding: 8px 0 0; }
+.slider-container input[type=range] {
+  width: 100%; height: 6px; -webkit-appearance: none; appearance: none;
+  background: linear-gradient(to right, var(--border), var(--accent));
+  border-radius: 3px; outline: none; cursor: pointer;
+}
+.slider-container input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 20px; height: 20px;
+  background: var(--accent); border-radius: 50%; border: 2px solid var(--bg);
+  box-shadow: 0 0 8px rgba(240,136,62,0.4); cursor: pointer;
+}
+.slider-labels {
+  display: flex; justify-content: space-between; margin-top: 4px;
+  font-size: 10px; color: var(--text2); letter-spacing: 0.3px;
+}
+.slider-labels span { cursor: pointer; padding: 2px 4px; border-radius: 3px; transition: all 0.15s; }
+.slider-labels span:hover { color: var(--text); background: var(--bg3); }
+.slider-labels span.active { color: var(--accent); font-weight: 600; }
+
+/* Detail panel overlay */
+.detail-overlay {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center;
+}
+.detail-overlay.show { display: flex; }
+.detail-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 24px 28px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;
+}
+.detail-card h3 { font-size: 20px; margin-bottom: 4px; }
+.detail-card .close {
+  float: right; cursor: pointer; font-size: 24px; color: var(--text2);
+  line-height: 1; padding: 4px;
+}
+.detail-card .close:hover { color: var(--text); }
+.detail-card .meta { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+.detail-card table { width: 100%; font-size: 14px; border-collapse: collapse; }
+.detail-card th, .detail-card td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+.detail-card th { color: var(--text2); font-weight: 400; font-size: 12px; }
+.detail-card .prob-bar {
+  height: 8px; border-radius: 4px; background: var(--prob-bg); overflow: hidden; margin-top: 10px;
+}
+.detail-card .prob-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+.detail-card .footnote { font-size: 11px; color: var(--text2); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.detail-card .footnote a { color: var(--accent2); }
+
+/* Sources panel toggle */
+.sources-toggle {
+  position: absolute; top: 12px; right: 12px; z-index: 1000;
+  background: rgba(13,17,23,0.9); border: 1px solid var(--border);
+  color: var(--text2); padding: 6px 12px; border-radius: 6px;
+  cursor: pointer; font-size: 12px; font-family: inherit;
+}
+.sources-toggle:hover { color: var(--text); border-color: var(--text2); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main-content { flex-direction: column; }
+  .side-panel { width: 100%; max-height: 40vh; }
+  .header h1 { font-size: 16px; }
+  .header .stats { font-size: 11px; }
+  .period-info .period-name { font-size: 18px; }
+  .map-legend { bottom: 10px; left: 8px; font-size: 11px; min-width: 130px; }
+}
+
+/* Leaflet tweaks */
+.leaflet-container { background: var(--bg); }
+.region-label {
+  font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.7);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.5);
+  pointer-events: none; font-family: 'Noto Sans SC', sans-serif;
+}
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>▎无知之幕 · <span>中国历史人口概率</span></h1>
+      <div class="subtitle">在不知道你的出生时地之前，最可能落在哪里</div>
+    </div>
+    <div class="stats" id="headerStats">
+      总人口基数: <strong>~14.6B</strong> 人 · 拖动时间轴探索
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main-content">
+    <!-- Map -->
+    <div class="map-panel">
+      <div id="map"></div>
+      <div class="map-legend" id="mapLegend">
+        <div class="title">当前时期 · 区域概率密度</div>
+        <div class="row"><div class="swatch" style="background:#f0883e;"></div> >1.0%</div>
+        <div class="row"><div class="swatch" style="background:#d29922;"></div> 0.3–1.0%</div>
+        <div class="row"><div class="swatch" style="background:#58a6ff;"></div> 0.1–0.3%</div>
+        <div class="row"><div class="swatch" style="background:#1c6b8f;"></div> 0.03–0.1%</div>
+        <div class="row"><div class="swatch" style="background:#0d3b4f;"></div> &lt;0.03%</div>
+      </div>
+      <button class="sources-toggle" onclick="showSources()">📚 数据来源</button>
+    </div>
+
+    <!-- Side panel -->
+    <div class="side-panel">
+      <div class="period-info" id="periodInfo">
+        <div class="period-name" id="periodName">先秦</div>
+        <div class="period-years" id="periodYears">~2000 – 221 BCE</div>
+        <div class="period-pop">
+          <span>年均人口: <strong id="periodPop">15M</strong></span>
+          <span>时期出生: <strong id="periodBirths">981M</strong></span>
+          <span>占总出生: <strong id="periodShare">6.7%</strong></span>
+        </div>
+      </div>
+
+      <div class="top10-section" id="top10List">
+        <div class="top10-header">
+          <span>排名 · 时期 · 区域 · 阶级</span>
+          <span>概率</span>
+        </div>
+        <div id="top10Items">加载中...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom slider -->
+  <div class="bottom-bar">
+    <div class="slider-container">
+      <input type="range" id="timeSlider" min="0" max="11" value="0" step="1">
+      <div class="slider-labels" id="sliderLabels"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail overlay -->
+<div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
+  <div class="detail-card" id="detailCard">
+    <span class="close" onclick="closeDetail()">&times;</span>
+    <h3 id="detailTitle"></h3>
+    <div class="meta" id="detailMeta"></div>
+    <table id="detailTable"></table>
+    <div class="prob-bar" id="detailProbBar">
+      <div class="prob-bar-fill" id="detailProbFill"></div>
+    </div>
+    <div class="footnote" id="detailFootnote"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ============================================================
+// DATA MODEL
+// ============================================================
+
+const PERIODS = [
+  // {id, name, start, end, label, avgPop, births, regions:{}, classes:{}}
+  {
+    id: "pre-qin", name: "先秦", start: -2000, end: -221,
+    label: "~2000–221 BCE", years: 1779,
+    avgPop: 15, births: 981,
+    note: "从夏商周到春秋战国，人口缓慢增长。西周约2-5M，战国约25-30M。",
+    regions: { north: 0.18, central: 0.28, guanzhong: 0.20, jiangnan: 0.02, huguang: 0.02, sichuan: 0.05, lingnan: 0.01, northeast: 0.00, northwest: 0.12, tibet: 0.00, southwest: 0.02, mongolia: 0.10 },
+    classes: { peasant: 0.78, gentry: 0.03, artisan: 0.06, official: 0.02, slave: 0.08, other: 0.03 }
+  },
+  {
+    id: "qin-han", name: "秦汉", start: -221, end: 220,
+    label: "221 BCE – 220 CE", years: 441,
+    avgPop: 50, births: 892,
+    note: "首次统一帝国。西汉元始二年(2 CE)户籍人口约58M，现代学者调高至约60-65M。",
+    regions: { north: 0.40, central: 0.25, guanzhong: 0.15, jiangnan: 0.05, huguang: 0.04, sichuan: 0.08, lingnan: 0.02, northeast: 0.00, northwest: 0.01, tibet: 0.00, southwest: 0.00, mongolia: 0.00 },
+    classes: { peasant: 0.80, gentry: 0.04, artisan: 0.06, official: 0.02, slave: 0.05, other: 0.03 }
+  },
+  {
+    id: "six-dynasties", name: "魏晋南北朝", start: 220, end: 589,
+    label: "220–589 CE", years: 369,
+    avgPop: 28, births: 475,
+    note: "长期分裂战乱，人口大幅缩减。三国时期仅约16-20M，南方份额开始上升。",
+    regions: { north: 0.25, central: 0.20, guanzhong: 0.10, jiangnan: 0.18, huguang: 0.10, sichuan: 0.10, lingnan: 0.05, northeast: 0.01, northwest: 0.01, tibet: 0.00, southwest: 0.00, mongolia: 0.00 },
+    classes: { peasant: 0.75, gentry: 0.06, artisan: 0.05, official: 0.04, slave: 0.07, other: 0.03 }
+  },
+  {
+    id: "sui-tang", name: "隋唐", start: 589, end: 907,
+    label: "589–907 CE", years: 318,
+    avgPop: 70, births: 990,
+    note: "隋唐盛世，天宝年间约75-90M人。安史之乱后人口锐减。南北趋于均衡。",
+    regions: { north: 0.32, central: 0.20, guanzhong: 0.10, jiangnan: 0.18, huguang: 0.08, sichuan: 0.07, lingnan: 0.04, northeast: 0.01, northwest: 0.00, tibet: 0.00, southwest: 0.00, mongolia: 0.00 },
+    classes: { peasant: 0.78, gentry: 0.05, artisan: 0.07, official: 0.03, slave: 0.04, other: 0.03 }
+  },
+  {
+    id: "song-jin", name: "宋辽金", start: 907, end: 1279,
+    label: "907–1279 CE", years: 372,
+    avgPop: 115, births: 1700,
+    note: "中国人口首次突破1亿。北宋末约112M(含辽金约140M)。经济重心彻底南移。",
+    regions: { north: 0.22, central: 0.18, guanzhong: 0.07, jiangnan: 0.25, huguang: 0.12, sichuan: 0.08, lingnan: 0.06, northeast: 0.02, northwest: 0.00, tibet: 0.00, southwest: 0.00, mongolia: 0.00 },
+    classes: { peasant: 0.75, gentry: 0.06, artisan: 0.08, official: 0.03, slave: 0.04, other: 0.04 }
+  },
+  {
+    id: "yuan", name: "元", start: 1271, end: 1368,
+    label: "1271–1368 CE", years: 97,
+    avgPop: 85, births: 365,
+    note: "蒙古统治时期，人口增长放缓。北方部分地区人口减少，南方相对稳定。",
+    regions: { north: 0.18, central: 0.15, guanzhong: 0.06, jiangnan: 0.28, huguang: 0.14, sichuan: 0.07, lingnan: 0.08, northeast: 0.02, northwest: 0.01, tibet: 0.00, southwest: 0.01, mongolia: 0.00 },
+    classes: { peasant: 0.74, gentry: 0.05, artisan: 0.08, official: 0.04, slave: 0.06, other: 0.03 }
+  },
+  {
+    id: "ming", name: "明", start: 1368, end: 1644,
+    label: "1368–1644 CE", years: 276,
+    avgPop: 130, births: 1510,
+    note: "明后期人口约150M。江南商业繁荣，城镇化率领先全球。玉米、番薯传入为清人口爆炸埋下伏笔。",
+    regions: { north: 0.18, central: 0.16, guanzhong: 0.06, jiangnan: 0.25, huguang: 0.15, sichuan: 0.06, lingnan: 0.10, northeast: 0.02, northwest: 0.01, tibet: 0.00, southwest: 0.01, mongolia: 0.00 },
+    classes: { peasant: 0.74, gentry: 0.05, artisan: 0.09, official: 0.03, slave: 0.05, other: 0.04 }
+  },
+  {
+    id: "early-qing", name: "清前期", start: 1644, end: 1800,
+    label: "1644–1800 CE", years: 156,
+    avgPop: 220, births: 1440,
+    note: "人口爆发期。番薯/玉米/土豆推广+康熙雍正年间税制改革→1741年1.4亿→1790年3亿。",
+    regions: { north: 0.20, central: 0.16, guanzhong: 0.05, jiangnan: 0.20, huguang: 0.16, sichuan: 0.08, lingnan: 0.12, northeast: 0.01, northwest: 0.01, tibet: 0.00, southwest: 0.01, mongolia: 0.00 },
+    classes: { peasant: 0.78, gentry: 0.04, artisan: 0.07, official: 0.02, slave: 0.05, other: 0.04 }
+  },
+  {
+    id: "late-qing", name: "清后期", start: 1800, end: 1912,
+    label: "1800–1912 CE", years: 112,
+    avgPop: 400, births: 1792,
+    note: "人口突破4亿。太平天国(1850-1864)导致2000-3000万人死亡。晚清社会危机加剧。",
+    regions: { north: 0.20, central: 0.15, guanzhong: 0.05, jiangnan: 0.18, huguang: 0.16, sichuan: 0.10, lingnan: 0.13, northeast: 0.01, northwest: 0.01, tibet: 0.00, southwest: 0.01, mongolia: 0.00 },
+    classes: { peasant: 0.77, gentry: 0.04, artisan: 0.07, official: 0.02, slave: 0.05, other: 0.05 }
+  },
+  {
+    id: "republic", name: "民国", start: 1912, end: 1949,
+    label: "1912–1949 CE", years: 37,
+    avgPop: 480, births: 675,
+    note: "战乱频仍（军阀混战、抗日战争、国共内战）。1949年人口约5.5亿。",
+    regions: { north: 0.18, central: 0.14, guanzhong: 0.04, jiangnan: 0.17, huguang: 0.15, sichuan: 0.12, lingnan: 0.13, northeast: 0.04, northwest: 0.02, tibet: 0.00, southwest: 0.01, mongolia: 0.00 },
+    classes: { peasant: 0.75, worker: 0.05, artisan: 0.06, official: 0.03, soldier: 0.03, other: 0.08 }
+  },
+  {
+    id: "prc-early", name: "现代·前期", start: 1949, end: 1978,
+    label: "1949–1978 CE", years: 29,
+    avgPop: 780, births: 820,
+    note: "高出生率(35-40‰)→1960s年均2000万+出生。1970s计划生育起步，出生率开始下降。",
+    regions: { north: 0.16, central: 0.13, guanzhong: 0.04, jiangnan: 0.15, huguang: 0.14, sichuan: 0.12, lingnan: 0.12, northeast: 0.06, northwest: 0.04, tibet: 0.00, southwest: 0.03, mongolia: 0.01 },
+    classes: { peasant: 0.82, worker: 0.10, artisan: 0.02, official: 0.03, soldier: 0.01, other: 0.02 }
+  },
+  {
+    id: "prc-recent", name: "现代·后期", start: 1978, end: 2020,
+    label: "1978–2020 CE", years: 42,
+    avgPop: 1200, births: 1410,
+    note: "改革开放+独生子女政策。出生率从20‰降至10‰以下。总人口从9.6亿增至14亿。大规模城镇化。",
+    regions: { north: 0.14, central: 0.12, guanzhong: 0.04, jiangnan: 0.15, huguang: 0.13, sichuan: 0.10, lingnan: 0.15, northeast: 0.05, northwest: 0.04, tibet: 0.00, southwest: 0.06, mongolia: 0.02 },
+    classes: { peasant: 0.40, worker: 0.28, artisan: 0.05, official: 0.06, soldier: 0.01, other: 0.20 }
+  }
+];
+
+const TOTAL_BIRTHS = PERIODS.reduce((s, p) => s + p.births, 0);
+
+// Region definitions for map
+const REGIONS = {
+  north: { name: "华北", nameEn: "North China", lat: 38.5, lng: 117, prob: 0 },
+  central: { name: "中原", nameEn: "Central Plains", lat: 34.5, lng: 114.5, prob: 0 },
+  guanzhong: { name: "关中", nameEn: "Guanzhong", lat: 35, lng: 109, prob: 0 },
+  jiangnan: { name: "江南", nameEn: "Jiangnan", lat: 31, lng: 120, prob: 0 },
+  huguang: { name: "湖广", nameEn: "Huguang", lat: 29, lng: 113, prob: 0 },
+  sichuan: { name: "四川", nameEn: "Sichuan", lat: 30.5, lng: 105, prob: 0 },
+  lingnan: { name: "岭南", nameEn: "Lingnan", lat: 24, lng: 114, prob: 0 },
+  northeast: { name: "东北", nameEn: "Northeast", lat: 46, lng: 127, prob: 0 },
+  northwest: { name: "西北", nameEn: "Northwest", lat: 41, lng: 88, prob: 0 },
+  mongolia: { name: "蒙古", nameEn: "Mongolia", lat: 44, lng: 112, prob: 0 },
+  tibet: { name: "青藏", nameEn: "Tibet", lat: 32, lng: 88, prob: 0 },
+  southwest: { name: "西南", nameEn: "Southwest", lat: 26, lng: 104, prob: 0 }
+};
+
+const CLASSES = {
+  peasant: { name: "农民/佃农", desc: "自耕农、佃农、农业劳动者", icon: "🌾" },
+  gentry: { name: "地主/士绅", desc: "地主、乡绅、富户", icon: "🏠" },
+  artisan: { name: "工匠/商人", desc: "手工业者、匠人、商贩、行商", icon: "🔧" },
+  official: { name: "士人/官吏", desc: "读书人、科举出身、各级官员、吏员", icon: "📜" },
+  slave: { name: "奴婢/贱民", desc: "家奴、官奴、倡优、丐户等", icon: "⛓️" },
+  worker: { name: "工人/职员", desc: "产业工人、企业职员、服务业人员", icon: "🏭" },
+  soldier: { name: "军人", desc: "士兵、将领、武装力量人员", icon: "⚔️" },
+  other: { name: "其他", desc: "僧道、医卜、流民、城市贫民等", icon: "·" }
+};
+
+// Region polygon coordinates (approximate)
+const REGION_POLYGONS = {
+  north: [
+    [42.5, 114.0], [42.5, 119.5], [41.0, 122.0], [39.5, 121.5], [38.0, 119.0],
+    [36.5, 120.5], [35.5, 119.0], [35.5, 116.5], [36.5, 115.0], [38.0, 114.0],
+    [39.5, 113.5], [41.0, 113.0], [42.5, 114.0]
+  ],
+  central: [
+    [36.0, 115.0], [35.5, 117.5], [34.5, 120.0], [33.5, 119.0], [33.0, 117.0],
+    [32.5, 114.5], [33.0, 112.5], [34.0, 112.0], [35.5, 112.5], [36.0, 115.0]
+  ],
+  guanzhong: [
+    [37.5, 107.5], [37.5, 110.5], [36.0, 111.5], [34.5, 111.0], [33.5, 109.5],
+    [34.0, 107.5], [34.5, 106.5], [36.0, 106.5], [37.5, 107.5]
+  ],
+  jiangnan: [
+    [33.5, 119.0], [34.5, 120.0], [33.0, 122.5], [31.5, 123.0], [30.0, 122.5],
+    [28.5, 121.5], [28.0, 119.5], [28.5, 117.5], [29.5, 116.5], [31.0, 117.5],
+    [32.5, 118.5], [33.5, 119.0]
+  ],
+  huguang: [
+    [33.0, 112.5], [32.5, 114.5], [32.0, 116.5], [31.0, 117.5], [29.5, 116.5],
+    [28.0, 116.0], [27.0, 114.5], [26.5, 112.5], [27.5, 110.5], [29.0, 111.0],
+    [30.5, 111.5], [32.0, 112.0], [33.0, 112.5]
+  ],
+  sichuan: [
+    [33.5, 104.0], [33.0, 107.5], [31.5, 108.5], [29.5, 108.0], [28.0, 107.0],
+    [27.5, 104.5], [28.0, 102.5], [29.0, 100.5], [31.0, 100.0], [32.5, 102.5],
+    [33.5, 104.0]
+  ],
+  lingnan: [
+    [27.0, 114.5], [28.0, 116.0], [27.0, 119.0], [25.5, 120.0], [23.5, 118.5],
+    [22.5, 116.0], [21.5, 113.5], [21.0, 110.0], [22.5, 108.0], [24.0, 108.5],
+    [25.5, 110.5], [27.0, 114.5]
+  ],
+  northeast: [
+    [40.5, 119.0], [42.0, 119.5], [43.5, 121.0], [45.0, 123.0], [46.5, 125.0],
+    [48.0, 127.5], [50.0, 128.0], [52.0, 130.0], [53.0, 128.0], [50.5, 127.0],
+    [48.5, 124.5], [46.5, 122.0], [44.5, 119.5], [42.5, 118.0], [40.5, 119.0]
+  ],
+  northwest: [
+    [35.0, 106.0], [37.0, 106.0], [38.5, 106.5], [40.0, 106.0], [41.5, 104.0],
+    [42.5, 100.0], [43.5, 95.0], [45.0, 90.0], [47.0, 85.0], [47.5, 82.0],
+    [44.0, 80.0], [40.0, 78.0], [37.0, 78.0], [36.0, 82.0], [35.5, 88.0],
+    [36.0, 94.0], [35.5, 100.0], [35.0, 104.0], [35.0, 106.0]
+  ],
+  mongolia: [
+    [42.5, 108.0], [44.0, 108.0], [46.0, 109.0], [48.0, 108.0], [50.0, 110.0],
+    [50.0, 114.0], [48.5, 117.5], [47.0, 119.0], [45.0, 119.0], [43.0, 117.0],
+    [42.0, 114.5], [42.5, 108.0]
+  ],
+  tibet: [
+    [36.0, 78.0], [36.0, 82.0], [35.5, 86.0], [35.0, 90.0], [34.0, 93.5],
+    [32.0, 95.0], [30.0, 97.0], [28.5, 97.5], [27.0, 95.0], [26.5, 92.0],
+    [27.0, 88.0], [27.5, 84.0], [28.0, 80.0], [28.5, 78.0], [31.0, 76.0],
+    [34.0, 76.0], [36.0, 78.0]
+  ],
+  southwest: [
+    [28.5, 107.0], [28.5, 109.0], [27.0, 109.5], [26.0, 108.5], [24.5, 106.0],
+    [23.5, 104.0], [22.5, 102.5], [22.0, 100.5], [23.5, 99.0], [25.0, 98.5],
+    [26.5, 100.0], [27.5, 100.5], [28.0, 102.5], [28.5, 105.5], [28.5, 107.0]
+  ]
+};
+
+// ============================================================
+// PROBABILITY CALCULATOR
+// ============================================================
+
+function calcProbabilities(periodIdx) {
+  const p = PERIODS[periodIdx];
+  const results = [];
+  for (const [rkey, rshare] of Object.entries(p.regions)) {
+    if (rshare === 0) continue;
+    for (const [ckey, cshare] of Object.entries(p.classes)) {
+      if (cshare === 0) continue;
+      const prob = (p.births / TOTAL_BIRTHS) * rshare * cshare;
+      results.push({ periodIdx, region: rkey, class: ckey, prob });
+    }
+  }
+  results.sort((a, b) => b.prob - a.prob);
+  return results;
+}
+
+function getRegionProb(regionKey, periodIdx) {
+  const p = PERIODS[periodIdx];
+  return (p.births / TOTAL_BIRTHS) * (p.regions[regionKey] || 0);
+}
+
+// ============================================================
+// MAP SETUP
+// ============================================================
+
+const map = L.map('map', {
+  center: [35, 107], zoom: 4,
+  zoomControl: true, attributionControl: false,
+  scrollWheelZoom: true
+});
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  maxZoom: 19, attribution: '&copy; <a href="https://carto.com/">CARTO</a>'
+}).addTo(map);
+
+const regionLayers = {};
+const regionLabels = {};
+
+// Function to get color based on probability
+function getProbColor(prob) {
+  if (prob > 0.01) return { fill: '#f0883e', weight: 1.5 };
+  if (prob > 0.003) return { fill: '#d29922', weight: 1.0 };
+  if (prob > 0.001) return { fill: '#58a6ff', weight: 0.8 };
+  if (prob > 0.0003) return { fill: '#1c6b8f', weight: 0.5 };
+  return { fill: '#0d3b4f', weight: 0.3 };
+}
+
+function buildMap(periodIdx) {
+  // Clear existing layers
+  Object.values(regionLayers).forEach(l => map.removeLayer(l));
+  Object.values(regionLabels).forEach(l => map.removeLayer(l));
+  Object.keys(regionLayers).forEach(k => delete regionLayers[k]);
+  Object.keys(regionLabels).forEach(k => delete regionLabels[k]);
+
+  const totalRegionProb = {};
+  for (const rkey of Object.keys(REGIONS)) {
+    totalRegionProb[rkey] = getRegionProb(rkey, periodIdx);
+  }
+
+  for (const [rkey, coords] of Object.entries(REGION_POLYGONS)) {
+    const prob = totalRegionProb[rkey];
+    const color = getProbColor(prob);
+    const layer = L.polygon(coords, {
+      color: 'rgba(255,255,255,0.25)',
+      weight: color.weight,
+      fillColor: color.fill,
+      fillOpacity: 0.55 + Math.min(prob * 30, 0.35),
+      smoothFactor: 1.5
+    }).addTo(map);
+
+    const r = REGIONS[rkey];
+    layer.bindTooltip(`${r.name}\n概率: ${(prob * 100).toFixed(2)}%`, {
+      direction: 'center', className: 'region-tooltip'
+    });
+
+    layer.on('click', () => showRegionDetail(rkey, periodIdx));
+    layer.on('mouseover', function() { this.setStyle({ fillOpacity: 0.75, weight: 2 }); });
+    layer.on('mouseout', function() { this.setStyle({ fillOpacity: 0.55 + Math.min(prob * 30, 0.35), weight: color.weight }); });
+
+    regionLayers[rkey] = layer;
+
+    // Labels
+    const label = L.marker([r.lat, r.lng], {
+      icon: L.divIcon({
+        className: 'region-label',
+        html: r.name,
+        iconSize: [80, 20],
+        iconAnchor: [40, 10]
+      }),
+      interactive: false
+    }).addTo(map);
+    regionLabels[rkey] = label;
+  }
+}
+
+// ============================================================
+// TOP 10 LIST
+// ============================================================
+
+function renderTop10(periodIdx) {
+  const results = calcProbabilities(periodIdx);
+  const top10 = results.slice(0, 10);
+  const container = document.getElementById('top10Items');
+
+  container.innerHTML = top10.map((item, i) => {
+    const p = PERIODS[item.periodIdx];
+    const r = REGIONS[item.region];
+    const c = CLASSES[item.class] || { name: item.class, icon: '' };
+    const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+    const probPct = (item.prob * 100).toFixed(3);
+
+    return `
+      <div class="top10-item ${i === 0 ? 'active' : ''}" onclick="showComboDetail(${i})" data-idx="${i}">
+        <div class="top10-rank ${rankClass}">${i + 1}</div>
+        <div class="top10-info">
+          <div class="top10-period">${c.icon} ${r.name} · ${c.name}</div>
+          <div class="top10-detail">
+            <span>${p.name}</span>
+            <span>${p.label}</span>
+          </div>
+        </div>
+        <div class="top10-prob">${probPct}%</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============================================================
+// DETAIL VIEWS
+// ============================================================
+
+function showRegionDetail(rkey, periodIdx) {
+  const p = PERIODS[periodIdx];
+  const r = REGIONS[rkey];
+  const regionProb = getRegionProb(rkey, periodIdx);
+
+  document.getElementById('detailTitle').textContent = `${r.name} · ${p.name}`;
+  document.getElementById('detailMeta').textContent = `区域概率: ${(regionProb * 100).toFixed(3)}% · 该时期南方北部分布详见下图`;
+
+  const classData = Object.entries(p.classes)
+    .filter(([k]) => p.classes[k] > 0)
+    .map(([k, v]) => {
+      const c = CLASSES[k] || { name: k, icon: '' };
+      const classProb = regionProb * v;
+      return { name: `${c.icon} ${c.name}`, share: v, prob: classProb, desc: c.desc || '' };
+    })
+    .sort((a, b) => b.prob - a.prob);
+
+  let tableHtml = `<tr><th>阶级</th><th>区域占比</th><th>全局概率</th><th>说明</th></tr>`;
+  classData.forEach(d => {
+    tableHtml += `<tr><td>${d.name}</td><td>${(d.share * 100).toFixed(1)}%</td><td>${(d.prob * 100).toFixed(3)}%</td><td style="font-size:12px;color:var(--text2)">${d.desc}</td></tr>`;
+  });
+
+  document.getElementById('detailTable').innerHTML = tableHtml;
+
+  const maxProb = classData[0].prob;
+  document.getElementById('detailProbFill').style.width = '100%';
+  document.getElementById('detailProbFill').style.background = `linear-gradient(90deg, ${getProbColor(regionProb).fill}, ${getProbColor(regionProb).fill})`;
+
+  document.getElementById('detailFootnote').innerHTML = `模型基于 <a href="#" onclick="showSources();return false;">葛剑雄《中国人口史》</a>、<a href="#" onclick="showSources();return false;">曹树基(2024)</a> 等学者数据构建。各时期人口估计有±5–50%的不确定性，详见数据来源。`;
+
+  document.getElementById('detailOverlay').classList.add('show');
+}
+
+function showComboDetail(idx) {
+  const results = calcProbabilities(currentPeriod);
+  const item = results[idx];
+  if (!item) return;
+
+  const p = PERIODS[item.periodIdx];
+  const r = REGIONS[item.region];
+  const c = CLASSES[item.class] || { name: item.class, icon: '', desc: '' };
+  const probPct = (item.prob * 100).toFixed(3);
+
+  document.getElementById('detailTitle').textContent = `#${idx + 1} ${r.name} · ${c.name}`;
+  document.getElementById('detailMeta').textContent = `${p.name} (${p.label}) · 全局概率 ${probPct}% · ${p.note}`;
+
+  let tableHtml = `<tr><th>维度</th><th>值</th><th>备注</th></tr>`;
+  tableHtml += `<tr><td>时期</td><td>${p.name}</td><td style="font-size:12px;color:var(--text2)">${p.years}年 · 年均约${p.avgPop}M人 · 出生${p.births}M</td></tr>`;
+  tableHtml += `<tr><td>区域</td><td>${r.name}</td><td style="font-size:12px;color:var(--text2)">该时期区域占比 ${(p.regions[item.region] * 100).toFixed(1)}%</td></tr>`;
+  tableHtml += `<tr><td>阶级</td><td>${c.icon} ${c.name}</td><td style="font-size:12px;color:var(--text2)">${c.desc || ''} · 该时期占比 ${(p.classes[item.class] * 100).toFixed(1)}%</td></tr>`;
+
+  document.getElementById('detailTable').innerHTML = tableHtml;
+
+  const barEl = document.getElementById('detailProbFill');
+  barEl.style.width = `${Math.min(item.prob * 10000, 100)}%`;
+  barEl.style.background = 'linear-gradient(90deg, #f0883e, #f0c040)';
+
+  document.getElementById('detailFootnote').innerHTML = `模型基于葛剑雄《中国人口史》、曹树基"中国人口史(1368-1953)"(Brill 2024)、赵文林/谢淑君、路遇/滕泽之等学者数据。总出生人数估计参考PRB/Haub方法。不确定性：古代±40-50%，近现代±5-10%。`;
+
+  document.getElementById('detailOverlay').classList.add('show');
+}
+
+function closeDetail() {
+  document.getElementById('detailOverlay').classList.remove('show');
+}
+
+function showSources() {
+  document.getElementById('detailTitle').textContent = '📚 数据来源与方法论';
+  document.getElementById('detailMeta').innerHTML = '本模型采用"坦诚其骨架"原则：展示扎实的出生总数、合理的区域份额、明确的不确定性。';
+
+  const sources = [
+    { author: '葛剑雄', work: '《中国人口史》(六卷本)/《中国人口发展史》', note: '复旦大学出版社，核心参考：历代人口总量与区域分布' },
+    { author: '曹树基 (Cao Shuji)', work: '"The Population History of China (1368–1953)"', note: 'Brill, 2024. 明清至民国省级/府级人口数据' },
+    { author: '赵文林、谢淑君', work: '《中国人口史》', note: '人民出版社，历代人口估算' },
+    { author: '路遇、滕泽之', work: '《中国人口通史》', note: '山东人民出版社，宏观人口演变' },
+    { author: 'Durand, John D.', work: '"The Population Statistics of China, A.D. 2–1953"', note: 'Population Studies, 1960. 经典英文文献' },
+    { author: '何炳棣 (Ping-ti Ho)', work: '明清人口研究', note: '明-清人口社会学研究权威' },
+    { author: 'Maddison, Angus', work: '"Chinese Economic Performance in the Long Run"', note: 'OECD, 1998/2007. GDP/人口长期估算' },
+    { author: '胡焕庸', work: '胡焕庸线(1935)', note: '中国人口地理分界线。东南96% vs 西北4%的格局近百年来基本不变' },
+    { author: '陆学艺', work: '中国社会阶层结构研究', note: '2000s当代社会分层数据' },
+    { author: 'Haub, C. & Kaneda, T.', work: '"How Many People Have Ever Lived on Earth?"', note: 'PRB, 2022. 全球累计出生~117B，本模型采用一致方法推算中国部分' }
+  ];
+
+  let html = '<table><tr><th>来源</th><th>著作</th><th style="font-size:11px">说明</th></tr>';
+  sources.forEach(s => {
+    html += `<tr><td>${s.author}</td><td style="font-size:12px">${s.work}</td><td style="font-size:11px;color:var(--text2)">${s.note}</td></tr>`;
+  });
+  html += '</table>';
+  html += '<div class="footnote" style="margin-top:8px"><strong>模型局限：</strong><br>1. 公元前数据为考古推断，不确定性±40-50%<br>2. 公元0-1000年有限文字记录，不确定性±25-35%<br>3. 各时期区域份额为宏观估算，非精确统计数据<br>4. 阶级结构使用"士农工商"传统四分法+奴婢/其他，实际边界模糊<br>5. 模型中"出生人数"使用各时期平均人口×出生率×年数估算<br>6. 区域分界为示意性宏观区域，不代表精确行政边界</div>';
+
+  document.getElementById('detailTable').innerHTML = html;
+  document.getElementById('detailProbFill').style.width = '0%';
+  document.getElementById('detailFootnote').innerHTML = '';
+
+  document.getElementById('detailOverlay').classList.add('show');
+}
+
+// ============================================================
+// SLIDER & UI
+// ============================================================
+
+let currentPeriod = 0;
+
+function renderSliderLabels() {
+  const container = document.getElementById('sliderLabels');
+  container.innerHTML = PERIODS.map((p, i) =>
+    `<span data-idx="${i}" class="${i === currentPeriod ? 'active' : ''}">${p.name}</span>`
+  ).join('');
+  container.querySelectorAll('span').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.dataset.idx);
+      document.getElementById('timeSlider').value = idx;
+      updateView(idx);
+    });
+  });
+}
+
+function updateView(idx) {
+  currentPeriod = idx;
+  const p = PERIODS[idx];
+
+  // Update period info
+  document.getElementById('periodName').textContent = p.name;
+  document.getElementById('periodYears').textContent = p.label;
+  document.getElementById('periodPop').textContent = p.avgPop + 'M';
+  document.getElementById('periodBirths').textContent = (p.births >= 1000 ? (p.births / 1000).toFixed(1) + 'B' : p.births + 'M');
+  document.getElementById('periodShare').textContent = (p.births / TOTAL_BIRTHS * 100).toFixed(1) + '%';
+  document.getElementById('headerStats').innerHTML = `总人口基数: <strong>~${(TOTAL_BIRTHS / 1000).toFixed(1)}B</strong> · ${p.name}`;
+
+  // Update slider labels
+  document.querySelectorAll('#sliderLabels span').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.idx) === idx);
+  });
+
+  // Update map
+  buildMap(idx);
+
+  // Update top 10
+  renderTop10(idx);
+}
+
+// Initialize slider
+const slider = document.getElementById('timeSlider');
+slider.addEventListener('input', () => updateView(parseInt(slider.value)));
+
+// ============================================================
+// INIT
+// ============================================================
+
+renderSliderLabels();
+updateView(0);
+
+// Fit map to region bounds
+const allCoords = Object.values(REGION_POLYGONS).flat();
+map.fitBounds(L.latLngBounds(allCoords));
+
+</script>
+</body>
+</html>
